@@ -31,7 +31,7 @@ Statische Web-App mit Mean-Reversion-Kennzahlen für alle 50 Titel des **Swiss M
 
 ## Automatische Aktualisierung
 
-Der Workflow [`update-data.yml`](.github/workflows/update-data.yml) läuft an Handelstagen um 22:17 UTC (00:17 Ortszeit) und führt `scripts/update_data.py` aus. Das Skript lädt die Schlusskurse über [yfinance](https://github.com/ranaroussi/yfinance), rechnet alle Kennzahlen neu und schreibt `data.js` sowie `data/mean_reversion.csv`. Ein Commit entsteht nur, wenn sich Werte geändert haben. Manuell auslösbar über Actions › Kursdaten aktualisieren › Run workflow.
+Der Workflow [`update-data.yml`](.github/workflows/update-data.yml) läuft an Handelstagen um 22:17 UTC (00:17 Ortszeit) und führt `scripts/update_data.py` aus. Das Skript lädt die Schlusskurse über [yfinance](https://github.com/ranaroussi/yfinance), rechnet alle Kennzahlen neu und schreibt `data.js` sowie `data/mean_reversion.csv`. Ein Commit entsteht nur, wenn sich Werte geändert haben. Anschliessend veröffentlicht derselbe Lauf die Seite über `actions/deploy-pages`; ein Push mit dem Actions-Token löst keinen weiteren Workflow aus, weshalb der Pages-Neubau nicht davon abhängen darf. Manuell auslösbar über Actions › Kursdaten aktualisieren › Run workflow. Ein Push auf `main` veröffentlicht nur neu, ohne die Kennzahlen anzufassen.
 
 Drei Schutzvorrichtungen verhindern, dass ein Anbieterproblem als Gültigkeit durchgeht:
 

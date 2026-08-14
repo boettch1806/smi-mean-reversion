@@ -6,18 +6,25 @@ on:
     # und ausserhalb der Minute 0, in der GitHub die meisten Jobs einplant.
     - cron: '17 22 * * 1-5'
   workflow_dispatch:
-
-permissions:
-  contents: write
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
 
 concurrency:
-  group: update-data
+  group: pages
   cancel-in-progress: false
 
 jobs:
+  # Kennzahlen neu berechnen und einchecken. Bei einem reinen Push entfällt der
+  # Schritt, dann wird nur die bereits eingecheckte Datenlage veröffentlicht.
   update:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +43,7 @@ jobs:
       - name: Änderungen übernehmen
         run: |
           if git diff --quiet -- data.js data/mean_reversion.csv; then
-            echo "Keine Datenänderung, kein Commit."
+            echo "Keine Datenänderung, kein Commit." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           asof=$(python -c "import json,re;d=json.loads(re.search(r'window\.DATA\s*=\s*(\{.*\})\s*;',open('data.js',encoding='utf-8').read(),re.S).group(1));print(d['meta']['asof'])")
@@ -45,3 +52,32 @@ jobs:
           git add data.js data/mean_reversion.csv
           git commit -m "Kursdaten per ${asof}"
           git push
+
+  # Die Seite wird in jedem Lauf neu veröffentlicht. Das ist nötig, weil ein
+  # Push mit dem Actions-Token keinen weiteren Workflow auslöst und der
+  # Pages-Neubau sonst ausbliebe.
+  deploy:
+    needs: [update]
+    if: always() && needs.update.result != 'failure' && needs.update.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: pages
+        uses: actions/deploy-pages@v4
