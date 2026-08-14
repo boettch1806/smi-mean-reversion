@@ -21,6 +21,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import signals  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_JS = os.path.join(ROOT, "data.js")
 DATA_CSV = os.path.join(ROOT, "data", "mean_reversion.csv")
@@ -263,7 +266,7 @@ def write_outputs(rows: list[dict], series: dict, meta: dict) -> None:
     os.makedirs(os.path.dirname(DATA_CSV), exist_ok=True)
     cols = ["ticker", "name", "index", "sector", "last_date", "close", "rsi", "sma200",
             "dist200", "z", "vol1y", "vol5y", "rev_days", "halflife", "episodes",
-            "hitrate", "obs", "stale"]
+            "hitrate", "obs", "score", "sig", "stale"]
     pd.DataFrame(rows).reindex(columns=cols).to_csv(DATA_CSV, index=False)
 
 
@@ -334,6 +337,28 @@ def main() -> int:
             r["stale"] = True
     asof = str(asof)
 
+    # Signal-Score und Rückwärtstest. Der Score kommt aus den eben berechneten
+    # Kennzahlen, die Trefferquoten aus der vollen Tageshistorie desselben Laufs.
+    per_bt: dict[str, dict] = {}
+    for tk, df in frames.items():
+        try:
+            bt = signals.backtest(df, rsi)
+        except Exception as exc:
+            print(f"  {tk}: Rückwärtstest fehlgeschlagen ({exc})", flush=True)
+            continue
+        if bt:
+            per_bt[tk] = bt
+    sig_agg = signals.pool(per_bt) if per_bt else None
+    prev_bt = {r["ticker"]: r.get("bt") for r in prev.get("rows", [])}
+    for r in rows:
+        sc = signals.score(r.get("z"), r.get("rsi"))
+        r["score"] = sc
+        r["sig"] = signals.label(sc)
+        bt = per_bt.get(r["ticker"])
+        # Für übernommene Titel bleibt der bisherige Rückwärtstest stehen.
+        r["bt"] = signals.strip_raw(bt) if bt else prev_bt.get(r["ticker"])
+    print(f"Rückwärtstest: {len(per_bt)} Titel auswertbar", flush=True)
+
     stale = sorted(r["ticker"] for r in rows if r["stale"])
     meta = {
         "asof": asof,
@@ -342,6 +367,17 @@ def main() -> int:
         "count": len(rows),
         "stale": stale,
     }
+    if sig_agg:
+        meta["signal"] = {
+            "trigger": signals.TRIGGER, "strong": signals.STRONG, "watch": signals.WATCH,
+            "w_z": signals.W_Z, "w_rsi": signals.W_RSI,
+            "z_full": signals.Z_FULL, "rsi_full": signals.RSI_FULL,
+            "z_window": signals.Z_WINDOW, "horizons": list(signals.HORIZONS),
+            "min_events": signals.MIN_TICKER_EVENTS,
+            "tested": len(per_bt), "agg": sig_agg,
+        }
+    elif (prev.get("meta") or {}).get("signal"):
+        meta["signal"] = prev["meta"]["signal"]
     write_outputs(rows, series, meta)
 
     print(f"Stand: {asof} | Titel: {len(rows)} | neu berechnet: {len(computed)} | "

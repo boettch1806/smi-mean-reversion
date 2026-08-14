@@ -1,6 +1,12 @@
 const ROWS = window.DATA.rows;
 const SERIES = window.DATA.series;
 const META = window.DATA.meta || {};
+const SIG = META.signal || null;
+const HOR = (SIG && SIG.horizons) || [10, 20, 60];
+const SIG_W_Z = SIG ? SIG.w_z : 0.65;
+const SIG_W_RSI = SIG ? SIG.w_rsi : 0.35;
+const SIG_Z_FULL = SIG ? SIG.z_full : 2.5;
+const SIG_RSI_FULL = SIG ? SIG.rsi_full : 25;
 
 /* ISO-Datum als TT.MM.JJJJ. Bewusst ohne Date(), damit der Stichtag nicht in
    der Zeitzone des Betrachters um einen Tag verrutscht. */
@@ -9,18 +15,31 @@ const deDate = (iso) => {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso || '–');
 };
 
-const state = { idx: 'all', cold: false, hot: false, q: '', sort: 'z', dir: -1, sel: null };
+const state = { idx: 'all', cold: false, hot: false, sig: false, q: '', sort: 'z', dir: -1, sel: null, an: false };
 
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const fmt = (v, d = 2) => v === null || v === undefined ? '–' : v.toLocaleString('de-CH', { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmt0 = (v) => v === null || v === undefined ? '–' : v.toLocaleString('de-CH', { maximumFractionDigits: 0 });
 const sgn = (v, d = 2) => v === null ? '–' : (v > 0 ? '+' : '') + fmt(v, d);
 const cls = (r) => r.rsi === null ? 'neutral' : r.rsi < 30 ? 'cold' : r.rsi > 70 ? 'hot' : 'neutral';
+const pp = (v) => v === null || v === undefined ? '–' : (v > 0 ? '+' : '') + fmt(v, 1) + ' Pp';
+
+/* Stufe eines Signal-Scores: Signal, blosse Beobachtung oder nichts. */
+const TRIG = SIG ? SIG.trigger : 70;
+const WATCH = SIG ? (SIG.watch || 55) : 55;
+const tier = (s) => {
+  if (s === null || s === undefined) return null;
+  const a = Math.abs(s);
+  if (a < WATCH) return null;
+  return { side: s > 0 ? 'buy' : 'sell', firm: a >= TRIG, strong: a >= (SIG ? SIG.strong : 85) };
+};
+const hasSignal = (r) => { const t = tier(r.score); return !!(t && t.firm); };
 
 /* ---------- filtering ---------- */
 function view() {
   let rs = ROWS.filter(r => state.idx === 'all' || r.index === state.idx);
   if (state.cold || state.hot) rs = rs.filter(r => (state.cold && r.rsi !== null && r.rsi < 30) || (state.hot && r.rsi !== null && r.rsi > 70));
+  if (state.sig) rs = rs.filter(hasSignal);
   if (state.q) {
     const q = state.q.toLowerCase();
     rs = rs.filter(r => r.name.toLowerCase().includes(q) || r.ticker.toLowerCase().includes(q));
@@ -69,6 +88,14 @@ function zcell(z) {
   return `<span class="zbar"><i style="width:${w.toFixed(0)}px;background:${col}"></i><b style="font-variant-numeric:tabular-nums">${sgn(z)}</b></span>`;
 }
 
+function scell(r) {
+  if (r.score === null || r.score === undefined) return '<span class="dim">–</span>';
+  const t = tier(r.score);
+  const k = !t ? '' : t.firm ? (t.side === 'buy' ? 'buy' : 'sell') : 'watch';
+  const num = `<b style="font-variant-numeric:tabular-nums">${sgn(r.score, 0)}</b>`;
+  return t ? `<span class="pill ${k}" title="${r.sig || ''}">${sgn(r.score, 0)}</span>` : num;
+}
+
 function table(rs) {
   document.querySelector('#tbl tbody').innerHTML = rs.map(r => `
     <tr data-t="${r.ticker}" class="${state.sel === r.ticker ? 'sel' : ''}">
@@ -79,6 +106,7 @@ function table(rs) {
       <td class="n">${fmt(r.sma200, r.close > 5000 ? 0 : 2)}</td>
       <td class="n ${r.dist200 === null ? '' : r.dist200 > 0 ? 'pos' : 'neg'}">${sgn(r.dist200, 1)} %</td>
       <td class="n">${zcell(r.z)}</td>
+      <td class="n">${scell(r)}</td>
       <td class="n">${fmt(r.vol1y, 1)} %</td>
       <td class="n">${fmt(r.vol5y, 1)} %</td>
       <td class="n">${fmt0(r.rev_days)}</td>
@@ -222,12 +250,181 @@ function charts(rs) {
   document.querySelector('#zbars').parentElement.style.height = Math.max(320, zr.length * 15 + 40) + 'px';
 }
 
+/* ---------- Signalauswertung ----------
+   Alle Zahlen stammen aus dem Rückwärtstest im nächtlichen Lauf. Das Urteil wird
+   aus den Messwerten abgeleitet und nicht fest geschrieben, damit es sich mit
+   neuen Daten von selbst korrigiert. */
+function verdict(side) {
+  const a = SIG.agg[side], b = SIG.agg.base;
+  const edge = a.edge_hit20;
+  const refQ = side === 'buy' ? b.qpos : (b.qpos === null ? null : 100 - b.qpos);
+  const qOk = a.qpos !== null && refQ !== null && a.qpos - refQ >= 8;
+  if (edge === null) return { k: 'no', t: 'nicht messbar', w: 'Zu wenige Ereignisse für eine Aussage.' };
+  if (edge >= 5 && qOk) return { k: 'ok', t: 'schwach bestätigt', w: 'Der Vorsprung zeigt sich über viele Quartale und nicht nur in einer Marktphase.' };
+  if (edge >= 5) return { k: 'no', t: 'nicht bestätigt', w: 'Der Vorsprung stammt aus wenigen Quartalen und ist damit eine Wette auf einzelne Marktphasen.' };
+  return { k: 'no', t: 'nicht bestätigt', w: 'Kein nennenswerter Vorsprung gegenüber einem beliebigen Handelstag.' };
+}
+
+function histTable(side) {
+  const a = SIG.agg[side], b = SIG.agg.base;
+  const dirWord = side === 'buy' ? 'gestiegen' : 'gefallen';
+  const refQ = side === 'buy' ? b.qpos : (b.qpos === null ? null : 100 - b.qpos);
+  const rows = HOR.map(h => {
+    const e = a['edge_hit' + h], em = a['edge_med' + h];
+    const k = (v) => v === null ? '' : v > 0 ? 'pos' : 'neg';
+    return `<tr>
+      <td>${h} Tage</td>
+      <td>${a['hit' + h] === null ? '–' : fmt(a['hit' + h], 1) + ' %'}</td>
+      <td class="dim">${a['ref_hit' + h] === null ? '–' : fmt(a['ref_hit' + h], 1) + ' %'}</td>
+      <td class="edge ${k(e)}">${pp(e)}</td>
+      <td>${a['med' + h] === null ? '–' : sgn(a['med' + h], 2) + ' %'}</td>
+      <td class="dim">${a['ref_med' + h] === null ? '–' : sgn(a['ref_med' + h], 2) + ' %'}</td>
+      <td class="edge ${k(em)}">${pp(em)}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="sig-t">
+    <h4>${side === 'buy' ? 'Kaufsignale' : 'Verkaufssignale'} · ${fmt0(a.n)} Ereignisse</h4>
+    <table>
+      <thead><tr><th>Horizont</th><th>Kurs ${dirWord}</th><th>Zufall</th><th>Mehrwert</th><th>Median</th><th>Zufall</th><th>Mehrwert</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="7">Quartale, in denen die Mehrheit der Signale nach 20 Tagen richtig lag:
+        ${a.qpos === null ? '–' : fmt(a.qpos, 0) + ' % von ' + a.nq}, Zufall ${refQ === null ? '–' : fmt(refQ, 0) + ' %'}</td></tr></tfoot>
+    </table>
+  </div>`;
+}
+
+function analysis() {
+  const box = document.getElementById('analysis');
+  const btn = document.getElementById('btn-analyse');
+  if (!SIG) { btn.hidden = true; box.hidden = true; return; }
+  box.hidden = !state.an;
+  btn.setAttribute('aria-expanded', String(state.an));
+  if (!state.an) return;
+
+  const a = SIG.agg;
+  document.getElementById('sig-sub').textContent =
+    `Score ab ${SIG.trigger} gilt als Signal, ab ${SIG.strong} als deutlich · gemessen an ${SIG.tested} Titeln `
+    + `mit ${fmt0(a.buy.n)} Kauf- und ${fmt0(a.sell.n)} Verkaufsereignissen der letzten fünf Jahre`;
+
+  document.getElementById('sig-verdict').innerHTML = ['buy', 'sell'].map(s => {
+    const v = verdict(s);
+    return `<div class="sig-v ${v.k}"><b>${s === 'buy' ? 'Kaufseite' : 'Verkaufsseite'}: ${v.t}</b>
+      <span>${pp(SIG.agg[s].edge_hit20)} Trefferquote gegenüber dem Zufall auf 20 Tage. ${v.w}</span></div>`;
+  }).join('');
+
+  const now = ROWS.filter(r => tier(r.score)).sort((x, y) => Math.abs(y.score) - Math.abs(x.score));
+  document.getElementById('sig-now').innerHTML = now.length ? now.map(r => {
+    const t = tier(r.score);
+    return `<div class="sig-c ${t.side}">
+      <div class="hd"><span class="nm">${r.name}</span><span class="sc">${sgn(r.score, 0)}</span></div>
+      <div><span class="pill ${t.firm ? t.side : 'watch'}">${r.sig}</span></div>
+      <div class="kv">Z ${sgn(r.z)} · RSI ${fmt(r.rsi, 1)} · Δ SMA 200 ${sgn(r.dist200, 1)}&nbsp;%</div>
+      <div class="kv">Ø Rückkehr ${fmt0(r.rev_days)} Tage · Vola 1 J ${fmt(r.vol1y, 1)}&nbsp;%</div>
+    </div>`;
+  }).join('') : '<p class="sig-note">Kein Titel erreicht derzeit die Schwelle.</p>';
+
+  document.getElementById('sig-scope').textContent =
+    'Gezählt wird jeder Eintritt in ein Signal, nicht jeder Tag darin. Die Spalte Zufall zeigt, '
+    + 'was ein beliebiger Handelstag desselben Titels im selben Zeitraum geliefert hätte. '
+    + 'Aussagekräftig ist nur die Differenz.';
+  document.getElementById('sig-hist').innerHTML = histTable('buy') + histTable('sell');
+
+  const thin = ROWS.filter(r => r.bt && r.bt.buy && r.bt.buy.thin).length;
+  const withBt = ROWS.filter(r => r.bt).length;
+  document.getElementById('sig-warn').innerHTML = `<b>Was diese Zahlen nicht können</b>
+    <ul>
+      <li>Bei ${thin} von ${withBt} Titeln liegen weniger als ${SIG.min_events} Kaufereignisse in fünf Jahren. Eine titelspezifische Trefferquote ist dort nicht belastbar; belastbar ist nur der titelübergreifende Wert.</li>
+      <li>Der Testzeitraum umfasst fünf Jahre eines überwiegend steigenden Marktes. Deshalb steht neben jeder Quote der unbedingte Vergleichswert – ohne ihn wirkt jede Kaufquote gut.</li>
+      <li>Dividenden sind nicht eingerechnet. Die gemessenen Vorwärtsrenditen liegen damit unter den tatsächlichen.</li>
+      <li>Die Messfenster überlappen sich, und mehrere Schwellen wurden geprüft. Beides lässt einen gefundenen Vorsprung zufälliger erscheinen, als eine einzelne Zahl vermuten lässt.</li>
+      <li>Ein Signal ist eine statistische Auffälligkeit, kein Anlageratschlag. Über den Anlass der Bewegung sagt es nichts.</li>
+    </ul>`;
+}
+
+/* ---------- Titeldetail ---------- */
+function detail() {
+  const box = document.getElementById('detail');
+  const r = ROWS.find(x => x.ticker === state.sel);
+  if (!r) { box.hidden = true; return; }
+  box.hidden = false;
+  document.getElementById('det-title').textContent = `${r.name} · ${r.ticker.replace('.SW', '')}`;
+  document.getElementById('det-sub').textContent =
+    `${r.index} · ${r.sector} · Kurs ${fmt(r.close, r.close > 5000 ? 0 : 2)} CHF per ${deDate(r.last_date)}`;
+
+  const t = tier(r.score);
+  const zPart = r.z === null ? null : Math.round(100 * SIG_W_Z * Math.max(-1, Math.min(1, -r.z / SIG_Z_FULL)));
+  const rPart = r.rsi === null ? null : Math.round(100 * SIG_W_RSI * Math.max(-1, Math.min(1, (50 - r.rsi) / SIG_RSI_FULL)));
+
+  const scoreBox = `<div class="det-box">
+    <h4>Signal</h4>
+    <dl>
+      <div><dt>Signal-Score</dt><dd>${r.score === null ? '–' : sgn(r.score, 0)}</dd></div>
+      <div><dt>Einstufung</dt><dd>${r.sig || '–'}</dd></div>
+      <div><dt>davon aus Z-Score</dt><dd>${zPart === null ? '–' : sgn(zPart, 0)}</dd></div>
+      <div><dt>davon aus RSI</dt><dd>${rPart === null ? '–' : sgn(rPart, 0)}</dd></div>
+      <div><dt>Schwelle für ein Signal</dt><dd>±${TRIG}</dd></div>
+    </dl>
+  </div>`;
+
+  const kennBox = `<div class="det-box">
+    <h4>Kennzahlen</h4>
+    <dl>
+      <div><dt>RSI 14</dt><dd>${fmt(r.rsi, 1)}</dd></div>
+      <div><dt>Δ SMA 200</dt><dd>${sgn(r.dist200, 1)} %</dd></div>
+      <div><dt>Z-Score</dt><dd>${sgn(r.z)}</dd></div>
+      <div><dt>Vola 1 J / 5 J</dt><dd>${fmt(r.vol1y, 1)} % / ${fmt(r.vol5y, 1)} %</dd></div>
+      <div><dt>Ø Rückkehrdauer</dt><dd>${fmt0(r.rev_days)} Tage</dd></div>
+      <div><dt>Halbwertszeit</dt><dd>${fmt0(r.halflife)} Tage</dd></div>
+    </dl>
+  </div>`;
+
+  let btBox = '<div class="det-box"><h4>Historischer Verlauf nach Signalen</h4>'
+    + '<p class="sig-note">Für diesen Titel liegt kein Rückwärtstest vor, meist wegen zu kurzer Kurshistorie.</p></div>';
+  if (r.bt && SIG) {
+    const side = (t && t.side) || 'buy';
+    const s = r.bt[side], b = r.bt.base;
+    const pooled = SIG.agg[side];
+    const refHit = (h) => side === 'buy' ? b['hit' + h] : (b['hit' + h] === null ? null : 100 - b['hit' + h]);
+    const thin = !s || s.thin;
+    const rows = HOR.map(h => {
+      const own = s ? s['hit' + h] : null;
+      return `<div class="row"><span class="dim">${h} Tage</span>
+        <span class="track">
+          ${own === null ? '' : `<i style="left:0;width:${own}%;background:var(--${side === 'buy' ? 'cold' : 'hot'})"></i>`}
+          ${refHit(h) === null ? '' : `<i style="left:${refHit(h)}%;width:2px;background:var(--text)"></i>`}
+        </span>
+        <span style="text-align:right;font-variant-numeric:tabular-nums">${own === null ? '–' : fmt(own, 0) + ' %'}</span></div>`;
+    }).join('');
+    btBox = `<div class="det-box">
+      <h4>Historischer Verlauf nach ${side === 'buy' ? 'Kauf' : 'Verkauf'}signalen dieses Titels</h4>
+      <dl>
+        <div><dt>Signaleintritte seit ${deDate(r.bt.from)}</dt><dd>${s ? fmt0(s.n) : '–'}</dd></div>
+        <div><dt>Median nach 20 Tagen</dt><dd>${s && s.med20 !== null ? sgn(s.med20) + ' %' : '–'}</dd></div>
+        <div><dt>Zufall nach 20 Tagen</dt><dd>${b.med20 === null ? '–' : sgn(b.med20) + ' %'}</dd></div>
+        ${side === 'buy' && s && s.dd20 !== null && s.dd20 !== undefined ? `<div><dt>Median tiefster Punkt</dt><dd>${sgn(s.dd20)} %</dd></div>` : ''}
+      </dl>
+      <div class="det-bar">${rows}</div>
+      <p class="sig-note" style="margin-top:.5rem">Balken: Anteil der Fälle, in denen der Kurs anschliessend
+        ${side === 'buy' ? 'gestiegen' : 'gefallen'} ist. Der senkrechte Strich markiert den Zufallswert dieses Titels.</p>
+      ${thin ? `<p class="sig-note" style="margin-top:.5rem"><b>Zu wenige Ereignisse.</b> Mit ${s ? s.n_eval : 0}
+        auswertbaren Signalen ist die titelspezifische Quote nicht belastbar. Titelübergreifend lag die Quote auf
+        20 Tage bei ${pooled.hit20 === null ? '–' : fmt(pooled.hit20, 1) + ' %'} gegen ${pooled.ref_hit20 === null ? '–' : fmt(pooled.ref_hit20, 1) + ' %'}
+        Zufall, also ${pp(pooled.edge_hit20)}.</p>` : ''}
+    </div>`;
+  }
+  document.getElementById('det-body').innerHTML =
+    `<div class="det-grid">${scoreBox}${kennBox}${btBox}</div>`;
+}
+
 /* ---------- URL state ---------- */
 function writeHash() {
   const p = new URLSearchParams();
   if (state.idx !== 'all') p.set('idx', state.idx);
   if (state.cold) p.set('cold', '1');
   if (state.hot) p.set('hot', '1');
+  if (state.sig) p.set('sig', '1');
+  if (state.an) p.set('an', '1');
+  if (state.sel) p.set('sel', state.sel);
   if (state.q) p.set('q', state.q);
   if (state.sort !== 'z') p.set('sort', state.sort);
   if (state.dir !== -1) p.set('dir', 'asc');
@@ -239,12 +436,16 @@ function readHash() {
   if (p.get('idx')) state.idx = p.get('idx');
   state.cold = p.get('cold') === '1';
   state.hot = p.get('hot') === '1';
+  state.sig = p.get('sig') === '1';
+  state.an = p.get('an') === '1';
+  if (p.get('sel')) state.sel = p.get('sel');
   state.q = p.get('q') || '';
   if (p.get('sort')) state.sort = p.get('sort');
   if (p.get('dir') === 'asc') state.dir = 1;
   document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.idx === state.idx)));
   document.getElementById('f-cold').setAttribute('aria-pressed', String(state.cold));
   document.getElementById('f-hot').setAttribute('aria-pressed', String(state.hot));
+  document.getElementById('f-sig').setAttribute('aria-pressed', String(state.sig));
   document.getElementById('q').value = state.q;
 }
 
@@ -254,7 +455,8 @@ function exportCsv() {
     ['last_date', 'Datum'], ['close', 'Kurs'], ['rsi', 'RSI14'], ['sma200', 'SMA200'],
     ['dist200', 'Abstand_SMA200_Prozent'], ['z', 'ZScore'], ['vol1y', 'Volatilitaet_1J_Prozent'],
     ['vol5y', 'Volatilitaet_5J_Prozent'], ['rev_days', 'Rueckkehrdauer_Tage'],
-    ['halflife', 'Halbwertszeit_Tage'], ['episodes', 'Episoden_5J'], ['obs', 'Beobachtungen']];
+    ['halflife', 'Halbwertszeit_Tage'], ['episodes', 'Episoden_5J'], ['obs', 'Beobachtungen'],
+    ['score', 'SignalScore'], ['sig', 'Einstufung']];
   const rs = view();
   const lines = [cols.map(c => c[1]).join(';')];
   rs.forEach(r => lines.push(cols.map(c => r[c[0]] === null || r[c[0]] === undefined ? '' : String(r[c[0]])).join(';')));
@@ -269,7 +471,7 @@ function exportCsv() {
 /* ---------- render ---------- */
 function render() {
   const rs = view();
-  kpis(rs); table(rs); charts(rs); extremes(rs);
+  kpis(rs); table(rs); charts(rs); extremes(rs); analysis(); detail();
   try { writeHash(); } catch (e) { /* sandboxed iframe */ }
 }
 
@@ -279,7 +481,7 @@ document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click'
   document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   render();
 }));
-['cold', 'hot'].forEach(k => {
+['cold', 'hot', 'sig'].forEach(k => {
   const el = document.getElementById('f-' + k);
   el.addEventListener('click', () => { state[k] = !state[k]; el.setAttribute('aria-pressed', String(state[k])); render(); });
 });
@@ -290,6 +492,12 @@ document.querySelectorAll('#tbl thead button').forEach(b => b.addEventListener('
   render();
 }));
 document.getElementById('csv').addEventListener('click', exportCsv);
+document.getElementById('btn-analyse').addEventListener('click', () => {
+  state.an = !state.an;
+  render();
+  if (state.an) document.getElementById('analysis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.getElementById('det-close').addEventListener('click', () => { state.sel = null; render(); });
 document.getElementById('theme').addEventListener('click', () => {
   const cur = document.documentElement.dataset.theme;
   document.documentElement.dataset.theme = cur === 'dark' ? 'light' : 'dark';
@@ -301,6 +509,12 @@ document.getElementById('asof').textContent = deDate(META.asof);
 document.getElementById('asof2').textContent = deDate(META.asof);
 document.getElementById('count').textContent = ROWS.length;
 if (META.source) document.getElementById('src').textContent = META.source;
+if (SIG) {
+  document.getElementById('m-wz').textContent = fmt(SIG.w_z, 2);
+  document.getElementById('m-wr').textContent = fmt(SIG.w_rsi, 2);
+  document.getElementById('m-trig').textContent = SIG.trigger;
+  document.getElementById('m-zw').textContent = fmt0(SIG.z_window);
+}
 if (META.generated) {
   const g = new Date(META.generated);
   document.getElementById('gen').textContent = isNaN(g) ? META.generated

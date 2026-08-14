@@ -39,6 +39,11 @@
     </div>
     <button class="chip cold" id="f-cold" aria-pressed="false">RSI &lt; 30</button>
     <button class="chip hot" id="f-hot" aria-pressed="false">RSI &gt; 70</button>
+    <button class="chip" id="f-sig" aria-pressed="false">nur Signale</button>
+    <button class="btn-analyse" id="btn-analyse" aria-expanded="false" aria-controls="analysis">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-6M22 19H2"/></svg>
+      Analyse
+    </button>
     <input class="search" id="q" type="search" placeholder="Titel suchen" aria-label="Titel suchen">
     <button class="icon-btn" id="csv" aria-label="Auswahl als CSV herunterladen" title="Auswahl als CSV herunterladen">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 20h16"/></svg>
@@ -52,6 +57,34 @@
    <div class="wrap">
 
     <section class="kpis" id="kpis"></section>
+
+    <section class="card" id="analysis" hidden>
+      <header>
+        <h2>Signalauswertung</h2>
+        <p id="sig-sub">–</p>
+      </header>
+      <div class="body sig-body">
+        <div class="sig-verdict" id="sig-verdict"></div>
+        <h3 class="sig-h">Aktuelle Signale</h3>
+        <div class="sig-now" id="sig-now"></div>
+        <h3 class="sig-h">Was diese Signale historisch brachten</h3>
+        <p class="sig-lead" id="sig-scope">–</p>
+        <div class="sig-tables" id="sig-hist"></div>
+        <div class="sig-warn" id="sig-warn"></div>
+      </div>
+    </section>
+
+    <section class="card" id="detail" hidden>
+      <header>
+        <h2 id="det-title">–</h2>
+        <p id="det-sub">–</p>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="det-close" aria-label="Detail schliessen" title="Detail schliessen">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </header>
+      <div class="body" id="det-body"></div>
+    </section>
 
     <section class="grid-2">
       <div class="card">
@@ -103,6 +136,7 @@
               <th class="n"><button data-k="sma200">SMA 200</button></th>
               <th class="n"><button data-k="dist200">Δ SMA 200</button></th>
               <th class="n"><button data-k="z">Z-Score</button></th>
+              <th class="n"><button data-k="score">Signal-Score</button></th>
               <th class="n"><button data-k="vol1y">Vola 1J</button></th>
               <th class="n"><button data-k="vol5y">Vola 5J</button></th>
               <th class="n"><button data-k="rev_days">Ø Rückkehr</button></th>
@@ -126,7 +160,9 @@
           <li><b>Volatilität:</b> Standardabweichung der täglichen Log-Renditen, annualisiert mit √252, für ein bzw. fünf Jahre.</li>
           <li><b>Ø Rückkehrdauer:</b> mittlere Zahl an Handelstagen von dem Moment, in dem |Z| erstmals 1,0 überschreitet, bis die Abweichung ihren 5-Jahres-Mittelwert wieder durchkreuzt. «Episoden» ist die Anzahl solcher Ereignisse in fünf Jahren.</li>
           <li><b>Halbwertszeit:</b> aus einer AR(1)-Schätzung der Abweichung, −ln 2 / ln φ, in Handelstagen.</li>
-          <li><b>Grenzen:</b> Kein Kurs-Splitting oder Dividenden-Adjustment; Titel mit kurzer Historie (Amrize, Sunrise) erhalten keinen 5-Jahres-Z-Score. Kein Anlageratschlag.</li>
+          <li><b>Signal-Score:</b> zusammengesetzt aus Z-Score (Gewicht <span id="m-wz">–</span>) und RSI (Gewicht <span id="m-wr">–</span>), skaliert auf −100 bis +100. Positiv heisst gemessen an der eigenen Geschichte billig und schwach, also Kandidat für eine Rückkehr nach oben. Der Abstand zur 200-Tage-Linie geht bewusst nicht ein, weil er unnormiert bereits im Z-Score steckt. Als Signal gilt der Score erst ab <span id="m-trig">–</span>; diese Schwelle ist gemessen und nicht gesetzt, denn bei 40 zeigte der Rückwärtstest keinen Mehrwert gegenüber einem beliebigen Handelstag.</li>
+          <li><b>Rückwärtstest:</b> Für jeden Titel wird jeder Signal<i>eintritt</i> der letzten fünf Jahre gezählt, nicht jeder Tag innerhalb eines Signals, und gemessen, was in den folgenden 10, 20 und 60 Handelstagen geschah. Der Z-Score wird dafür an einem mitlaufenden Fenster von <span id="m-zw">–</span> Handelstagen normiert, das keine künftigen Kurse kennt; die in der Tabelle angezeigte Kennzahl normiert am gesamten Zeitraum, was für die Anzeige richtig, für eine Messung aber geschönt wäre. Jede Trefferquote steht neben der Quote eines beliebigen Handelstags desselben Titels im selben Zeitraum. Aussagekräftig ist nur die Differenz.</li>
+          <li><b>Grenzen:</b> Kein Kurs-Splitting oder Dividenden-Adjustment; Titel mit kurzer Historie (Amrize, Sunrise) erhalten keinen 5-Jahres-Z-Score. Da Dividenden nicht eingerechnet sind, werden die gemessenen Vorwärtsrenditen bei Schweizer Dividendenzahlern systematisch zu tief ausgewiesen. Der Testzeitraum umfasst nur fünf Jahre eines überwiegend steigenden Marktes, und die Messfenster überlappen sich. Kein Anlageratschlag und keine Anlageempfehlung.</li>
         </ul>
       </div>
     </section>

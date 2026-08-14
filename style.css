@@ -205,3 +205,67 @@ tbody tr.sel { background: var(--surface-offset); }
 @media (max-width: 800px) { .cols-2 { columns: 1; } }
 
 footer.foot { padding: 0 0 var(--space-8); font-size: var(--text-xs); color: var(--text-faint); }
+
+/* ---------- Signalauswertung ---------- */
+.btn-analyse {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: .4rem .7rem; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--text); font: 500 var(--text-xs)/1 var(--sans);
+  cursor: pointer; white-space: nowrap;
+}
+.btn-analyse:hover { border-color: var(--text-faint); }
+.btn-analyse[aria-expanded="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+.sig-body { display: grid; gap: var(--space-5); }
+.sig-h { margin: 0; font: 600 var(--text-sm)/1.3 var(--sans); color: var(--text); }
+.sig-lead, .sig-note { margin: 0; font-size: var(--text-xs); color: var(--text-muted); }
+.sig-verdict { display: grid; gap: var(--space-2); }
+.sig-v {
+  display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius);
+  background: var(--surface-2); border: 1px solid var(--divider);
+}
+.sig-v b { font-size: var(--text-sm); }
+.sig-v span { font-size: var(--text-xs); color: var(--text-muted); }
+.sig-v.ok { border-left: 3px solid var(--cold); }
+.sig-v.no { border-left: 3px solid var(--text-faint); }
+.sig-now { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.sig-c {
+  padding: var(--space-3) var(--space-4); border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2); display: grid; gap: var(--space-2);
+}
+.sig-c .hd { display: flex; align-items: baseline; gap: var(--space-2); justify-content: space-between; }
+.sig-c .nm { font: 600 var(--text-sm)/1.2 var(--sans); }
+.sig-c .sc { font: 600 var(--text-lg)/1 var(--mono); font-variant-numeric: tabular-nums; }
+.sig-c .kv { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sig-c.buy .sc { color: var(--cold); }
+.sig-c.sell .sc { color: var(--hot); }
+.sig-tables { display: grid; gap: var(--space-5); grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.sig-t h4 { margin: 0 0 var(--space-2); font: 600 var(--text-xs)/1.3 var(--sans); }
+.sig-t table { width: 100%; border-collapse: collapse; font-size: var(--text-xs); }
+.sig-t th, .sig-t td { padding: .35rem .4rem; border-bottom: 1px solid var(--divider); text-align: right; }
+.sig-t th:first-child, .sig-t td:first-child { text-align: left; }
+.sig-t thead th { color: var(--text-faint); font-weight: 500; white-space: nowrap; }
+.sig-t td { font-variant-numeric: tabular-nums; }
+.sig-t .edge.pos { color: var(--cold); font-weight: 600; }
+.sig-t .edge.neg { color: var(--hot); font-weight: 600; }
+.sig-t tfoot td { color: var(--text-muted); border-bottom: none; }
+.sig-warn {
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius);
+  background: var(--surface-offset); font-size: var(--text-xs); color: var(--text-muted);
+}
+.sig-warn ul { margin: var(--space-2) 0 0; padding-left: 1.1rem; display: grid; gap: var(--space-1); }
+.sig-warn b { color: var(--text); }
+.pill.buy { background: var(--cold-soft); color: var(--cold); }
+.pill.sell { background: var(--hot-soft); color: var(--hot); }
+.pill.watch { background: var(--neutral-soft); color: var(--text-muted); }
+.det-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.det-box { border: 1px solid var(--divider); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
+.det-box h4 { margin: 0 0 var(--space-2); font: 600 var(--text-xs)/1.3 var(--sans); }
+.det-box dl { margin: 0; display: grid; gap: var(--space-1); }
+.det-box dl > div { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs); }
+.det-box dt { color: var(--text-muted); }
+.det-box dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 500; }
+.det-bar { display: grid; gap: 3px; margin-top: var(--space-2); }
+.det-bar .row { display: grid; grid-template-columns: 5.5rem 1fr 3.2rem; align-items: center; gap: var(--space-2); font-size: var(--text-xs); }
+.det-bar .track { height: 6px; border-radius: 3px; background: var(--surface-offset); position: relative; overflow: hidden; }
+.det-bar .track i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
