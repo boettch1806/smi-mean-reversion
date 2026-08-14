@@ -29,9 +29,30 @@ Statische Web-App mit Mean-Reversion-Kennzahlen für alle 50 Titel des **Swiss M
 - Filterzustand in der URL, damit Ansichten teilbar sind
 - CSV-Export der aktuellen Auswahl
 
+## Automatische Aktualisierung
+
+Der Workflow [`update-data.yml`](.github/workflows/update-data.yml) läuft an Handelstagen um 22:17 UTC (00:17 Ortszeit) und führt `scripts/update_data.py` aus. Das Skript lädt die Schlusskurse über [yfinance](https://github.com/ranaroussi/yfinance), rechnet alle Kennzahlen neu und schreibt `data.js` sowie `data/mean_reversion.csv`. Ein Commit entsteht nur, wenn sich Werte geändert haben. Manuell auslösbar über Actions › Kursdaten aktualisieren › Run workflow.
+
+Drei Schutzvorrichtungen verhindern, dass ein Anbieterproblem als Gültigkeit durchgeht:
+
+| Situation | Verhalten |
+| --- | --- |
+| Datenanbieter liefert den jüngsten Handelstag nur für einen Teil der Titel | Als Stichtag gilt der jüngste Tag, den mindestens 80 Prozent der Titel bestätigen. Alle Kursreihen werden auf diesen Tag gekürzt, damit RSI und Z-Score einen echten Quervergleich erlauben. |
+| Weniger als 45 der 50 Titel ladbar | Lauf bricht mit Fehler ab, `data.js` bleibt unverändert. |
+| Ermittelter Stichtag ist nicht neuer als der veröffentlichte | Kein Schreibvorgang, kein Commit. Das Dashboard kann nicht in der Zeit zurückfallen. |
+| Einzelner Titel fällt aus (etwa `ROG`) | Vorwert aus dem bestehenden `data.js` wird übernommen und im Dashboard als Datenlücke markiert. |
+
+Lokal ausführen:
+
+```bash
+pip install -r scripts/requirements.txt
+python scripts/update_data.py
+```
+
 ## Datenstand
 
-- Tagesschlusskurse in CHF, 04.01.2021 bis 13.08.2026
+- Tagesschlusskurse in CHF über gut sechs Jahre; der aktuelle Stichtag steht im Kopf des Dashboards und in `data.js` unter `meta.asof`.
+- Die Erstbefüllung stammt aus den Perplexity-Finanzdaten, alle Folgeläufe aus Yahoo Finance. Ein Abgleich beider Quellen zum 13.08.2026 ergab bei jedem Titel, für den beide denselben Handelstag führten, exakt denselben Schlusskurs.
 - Indexzusammensetzung per 13.08.2026. Die ordentliche Index-Anpassung von SIX vom Juli 2026 (Galderma und Sandoz in den SMI, Swisscom und Kühne+Nagel in den SMIM) wird erst am 21.09.2026 wirksam und ist nicht berücksichtigt.
 - Amrize und Sunrise haben eine zu kurze Historie für einen 5-Jahres-Z-Score.
 - Beim Roche-Genussschein (`ROG`) endet die Kursreihe des Datenanbieters am 13.04.2026; der Titel ist in der Tabelle als Datenlücke markiert. Für aktuelle Roche-Signale dient die Namenaktie (`RO`) im SMIM.

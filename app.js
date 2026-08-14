@@ -1,5 +1,13 @@
 const ROWS = window.DATA.rows;
 const SERIES = window.DATA.series;
+const META = window.DATA.meta || {};
+
+/* ISO-Datum als TT.MM.JJJJ */
+const deDate = (iso) => {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
 const state = { idx: 'all', cold: false, hot: false, q: '', sort: 'z', dir: -1, sel: null };
 
@@ -77,7 +85,7 @@ function table(rs) {
       <td class="n">${fmt0(r.halflife)}</td>
       <td class="n">${r.episodes || '–'}</td>
     </tr>`).join('');
-  document.getElementById('tinfo').textContent = `${rs.length} Titel · Kurse und Kennzahlen per 13.08.2026`;
+  document.getElementById('tinfo').textContent = `${rs.length} Titel · Kurse und Kennzahlen per ${deDate(META.asof)}`;
   document.querySelectorAll('#tbl tbody tr').forEach(tr => tr.addEventListener('click', () => {
     state.sel = state.sel === tr.dataset.t ? null : tr.dataset.t;
     render();
@@ -289,7 +297,14 @@ document.getElementById('theme').addEventListener('click', () => {
 });
 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
 
-document.getElementById('asof').textContent = '13.08.2026';
+document.getElementById('asof').textContent = deDate(META.asof);
+document.getElementById('asof2').textContent = deDate(META.asof);
 document.getElementById('count').textContent = ROWS.length;
+if (META.source) document.getElementById('src').textContent = META.source;
+if (META.generated) {
+  const g = new Date(META.generated);
+  document.getElementById('gen').textContent = isNaN(g) ? META.generated
+    : g.toLocaleString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Zurich' });
+}
 try { readHash(); } catch (e) { /* ignore */ }
 render();
