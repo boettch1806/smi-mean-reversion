@@ -359,6 +359,29 @@ def main() -> int:
         r["bt"] = signals.strip_raw(bt) if bt else prev_bt.get(r["ticker"])
     print(f"Rückwärtstest: {len(per_bt)} Titel auswertbar", flush=True)
 
+    # Score-Verlauf auf dem bestehenden Wochenraster, damit das Detailpanel den
+    # Weg zum heutigen Signal zeigen kann. Für übernommene Titel bleibt der
+    # bisherige Verlauf stehen, sonst verschwindet der Chart bei einem Ausfall.
+    n_hist = 0
+    for tk, ser in series.items():
+        df = frames.get(tk)
+        prev_ser = prev_series.get(tk) or {}
+        if df is None:
+            if prev_ser.get("s"):
+                ser["s"], ser["ev"] = prev_ser["s"], prev_ser.get("ev", [])
+            continue
+        try:
+            h = signals.history(df, rsi, ser["d"])
+        except Exception as exc:
+            print(f"  {tk}: Score-Verlauf fehlgeschlagen ({exc})", flush=True)
+            h = None
+        if h:
+            ser["s"], ser["ev"] = h["s"], h["ev"]
+            n_hist += 1
+        elif prev_ser.get("s"):
+            ser["s"], ser["ev"] = prev_ser["s"], prev_ser.get("ev", [])
+    print(f"Score-Verlauf: {n_hist} Titel", flush=True)
+
     stale = sorted(r["ticker"] for r in rows if r["stale"])
     meta = {
         "asof": asof,

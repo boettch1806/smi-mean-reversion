@@ -175,6 +175,64 @@ def backtest(df: pd.DataFrame, rsi_fn) -> dict | None:
     return out
 
 
+def history(df: pd.DataFrame, rsi_fn, grid: list[str]) -> dict | None:
+    """Score-Verlauf auf einem vorgegebenen Datumsraster samt Signaleintritten.
+
+    Der Verlauf wird auf dasselbe wochenweise Raster gelegt, das das Dashboard
+    schon für Kurs und Z-Score verwendet, damit keine zweite Datumsreihe in
+    data.js landet. Die Eintritte dagegen stammen aus den Tagesdaten: ein Signal
+    kann zwischen zwei Rasterpunkten beginnen und wieder enden, und genau diese
+    kurzen Fälle würden bei einer wochenweisen Prüfung verschwinden. Der Score
+    ist derselbe mitlaufende wie im Rückwärtstest, kennt also keine künftigen
+    Kurse; die Kennzahl in der Tabelle normiert am gesamten Zeitraum und kann
+    deshalb am rechten Rand leicht abweichen.
+    """
+    if not grid:
+        return None
+    d = df.sort_values("date").dropna(subset=["close"]).reset_index(drop=True)
+    if len(d) < Z_MIN_OBS + 200:
+        return None
+
+    close = d["close"].astype(float)
+    sma = close.rolling(200, min_periods=200).mean()
+    z = causal_z(np.log(close) - np.log(sma))
+    sc = _score_series(z, rsi_fn(close, 14))
+    if sc.notna().sum() < 60:
+        return None
+
+    dates = pd.to_datetime(d["date"])
+    fwd20 = close.shift(-20) / close - 1.0
+
+    # Letzter gültiger Score je Rasterpunkt, ohne Blick nach vorne.
+    # Beide Datumsreihen auf dieselbe Zeiteinheit bringen, sonst verweigert
+    # merge_asof den Abgleich.
+    ns = "datetime64[ns]"
+    left = pd.DataFrame({"date": pd.to_datetime(pd.Series(grid)).astype(ns)})
+    right = pd.DataFrame({"date": dates.astype(ns), "sc": sc}).dropna(subset=["sc"])
+    if right.empty:
+        return None
+    merged = pd.merge_asof(left, right, on="date", direction="backward")
+    line = [None if pd.isna(v) else int(round(v)) for v in merged["sc"]]
+    if not any(v is not None for v in line):
+        return None
+
+    valid = sc.notna()
+    up = (sc >= TRIGGER).fillna(False).astype(bool)
+    dn = (sc <= -TRIGGER).fillna(False).astype(bool)
+    ev: list[list] = []
+    for side, mask in (("buy", valid & up & ~up.shift(1, fill_value=False)),
+                       ("sell", valid & dn & ~dn.shift(1, fill_value=False))):
+        for i in d.index[mask]:
+            if dates.loc[i].to_datetime64() < left["date"].iloc[0].to_datetime64():
+                continue
+            f = fwd20.loc[i]
+            ev.append([str(dates.loc[i].date()), 1 if side == "buy" else -1,
+                       int(round(float(sc.loc[i]))),
+                       None if pd.isna(f) else round(100.0 * float(f), 1)])
+    ev.sort(key=lambda e: e[0])
+    return {"s": line, "ev": ev}
+
+
 def _quarter_share(quarters: list[str], vals: list[float], side: str) -> tuple:
     """Anteil der Quartale, in denen die Mehrheit der Signale richtig lag."""
     df = pd.DataFrame({"q": quarters, "v": vals}).dropna()

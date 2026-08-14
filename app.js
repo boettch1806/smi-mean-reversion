@@ -170,7 +170,7 @@ function extremes(rs) {
 }
 
 /* ---------- charts ---------- */
-let sc, zb;
+let sc, zb, dch;
 function charts(rs) {
   const mk = (r) => ({ x: r.dist200, y: r.rsi, r: 4 + Math.min(Math.abs(r.z || 0), 4.2) * 3.2, row: r });
   const pick = (k) => rs.filter(r => r.rsi !== null && r.dist200 !== null && cls(r) === k).map(mk);
@@ -345,7 +345,11 @@ function analysis() {
 function detail() {
   const box = document.getElementById('detail');
   const r = ROWS.find(x => x.ticker === state.sel);
-  if (!r) { box.hidden = true; return; }
+  if (!r) {
+    box.hidden = true;
+    if (dch) { dch.destroy(); dch = null; }
+    return;
+  }
   box.hidden = false;
   document.getElementById('det-title').textContent = `${r.name} · ${r.ticker.replace('.SW', '')}`;
   document.getElementById('det-sub').textContent =
@@ -414,6 +418,141 @@ function detail() {
   }
   document.getElementById('det-body').innerHTML =
     `<div class="det-grid">${scoreBox}${kennBox}${btBox}</div>`;
+  detailChart(r);
+}
+
+/* Verlauf des mitlaufenden Scores mit den einzelnen Signaleintritten. Der Score
+   liegt auf demselben wochenweisen Raster wie Kurs und Z-Score; die Eintritte
+   stammen aus den Tagesdaten und werden auf den nächstgelegenen Rasterpunkt
+   gesetzt, damit auch kurze Signale sichtbar bleiben. */
+function detailChart(r) {
+  const wrap = document.querySelector('#detail .det-chart');
+  const note = document.getElementById('det-chart-note');
+  const s = SERIES[r.ticker];
+  if (dch) { dch.destroy(); dch = null; }
+  if (!s || !s.s) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+
+  const idxOf = (iso) => {
+    let lo = 0, hi = s.d.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (s.d[m] < iso) lo = m + 1; else hi = m; }
+    if (lo > 0 && Math.abs(Date.parse(s.d[lo]) - Date.parse(iso)) > Math.abs(Date.parse(iso) - Date.parse(s.d[lo - 1]))) lo -= 1;
+    return lo;
+  };
+  const ev = s.ev || [];
+  const mkPts = (side) => {
+    const a = new Array(s.d.length).fill(null);
+    ev.filter(e => e[1] === side).forEach(e => {
+      const i = idxOf(e[0]);
+      if (a[i] === null || Math.abs(e[2]) > Math.abs(a[i])) a[i] = e[2];
+    });
+    return a;
+  };
+  const evAt = {};
+  ev.forEach(e => { const i = idxOf(e[0]); (evAt[i] = evAt[i] || []).push(e); });
+
+  const nBuy = ev.filter(e => e[1] === 1).length;
+  const nSell = ev.length - nBuy;
+  const gap = Math.round((Date.parse(META.asof) - Date.parse(s.d[s.d.length - 1])) / 86400000);
+  note.textContent =
+    `${nBuy} Kauf- und ${nSell} Verkaufseintritte${ev.length ? ' seit ' + deDate(ev[0][0]) : ''}. Die Punkte zeigen den Tag, `
+    + 'an dem der Score die Schwelle erstmals überschritt; ein durchgehendes Signal wird nur einmal gezählt. '
+    + 'Der Score dieser Kurve ist der mitlaufende aus dem Rückwärtstest und kennt keine künftigen Kurse, '
+    + 'weshalb er am rechten Rand leicht von der Tabellenzahl abweichen kann'
+    + (gap > 1 ? `; die Kurve endet am ${deDate(s.d[s.d.length - 1])}, also ${gap} Tage vor dem Stichtag.` : '.');
+
+  const line = css('--text-muted'), faint = css('--text-faint');
+  const cold = css('--cold'), hot = css('--hot');
+  const narrow = window.innerWidth < 720;
+  // Jahreszahlen nur setzen, wenn genug Rasterpunkte dazwischen liegen, sonst
+  // kleben 2021 und 2022 auf schmalen Bildschirmen aneinander.
+  const yearTick = new Array(s.d.length).fill('');
+  let lastLabeled = -99;
+  s.d.forEach((iso, i) => {
+    if (i === 0 || iso.slice(0, 4) === s.d[i - 1].slice(0, 4)) return;
+    if (i - lastLabeled < (narrow ? 9 : 4)) return;
+    yearTick[i] = iso.slice(0, 4);
+    lastLabeled = i;
+  });
+  dch = new Chart(document.getElementById('det-chart-c'), {
+    type: 'line',
+    data: {
+      labels: s.d,
+      datasets: [
+        { label: 'Kurs', data: s.p, yAxisID: 'y1', borderColor: faint, borderWidth: 1,
+          pointRadius: 0, tension: .25, order: 3 },
+        { label: 'Score', data: s.s, yAxisID: 'y', borderColor: line, borderWidth: 1.6,
+          pointRadius: 0, tension: .2, spanGaps: false, order: 2 },
+        { label: 'Kaufeintritt', data: mkPts(1), yAxisID: 'y', showLine: false,
+          pointStyle: 'triangle', pointRadius: narrow ? 4.5 : 6, pointRotation: 0,
+          backgroundColor: cold, borderColor: cold, order: 1 },
+        { label: 'Verkaufseintritt', data: mkPts(-1), yAxisID: 'y', showLine: false,
+          pointStyle: 'triangle', pointRadius: narrow ? 4.5 : 6, pointRotation: 180,
+          backgroundColor: hot, borderColor: hot, order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          callbacks: {
+            title: (c) => deDate(s.d[c[0].dataIndex]),
+            label: (c) => {
+              if (c.datasetIndex > 1) return null;
+              return c.datasetIndex === 0 ? 'Kurs: ' + fmt(c.parsed.y, 2) + ' CHF'
+                : 'Score: ' + sgn(c.parsed.y, 0);
+            },
+            afterBody: (c) => (evAt[c[0].dataIndex] || []).map(e =>
+              `${e[1] === 1 ? 'Kaufeintritt' : 'Verkaufseintritt'} ${deDate(e[0])}, Score ${sgn(e[2], 0)}`
+              + (e[3] === null ? ', 20 Tage danach unbekannt' : `, 20 Tage danach ${sgn(e[3], 1)} %`))
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { color: css('--border') },
+             ticks: { color: faint, font: { size: 10 }, maxRotation: 0, autoSkip: false,
+                      // Jahreszahl nur am ersten Rasterpunkt des Jahres, sonst leer.
+                      callback: (v, i) => yearTick[i] || '' } },
+        y: { min: -108, max: 108, position: 'left',
+             title: { display: true, text: 'Signal-Score', color: css('--text-muted'), font: { size: 11 } },
+             grid: { color: css('--divider') }, border: { color: css('--border') },
+             afterBuildTicks: (ax) => { ax.ticks = [-100, -70, 0, 70, 100].map(value => ({ value })); },
+             ticks: { color: faint, font: { size: 10 } } },
+        y1: { position: 'right', grid: { display: false }, border: { color: css('--border') },
+              title: { display: true, text: 'Kurs in CHF', color: css('--text-faint'), font: { size: 11 } },
+              ticks: { color: faint, font: { size: 10 }, maxTicksLimit: 5 } }
+      }
+    },
+    plugins: [{
+      id: 'trigband',
+      beforeDatasetsDraw(chart) {
+        const { ctx, chartArea: a, scales } = chart;
+        ctx.save();
+        [[TRIG, cold, 'Kaufschwelle ' + TRIG], [-TRIG, hot, 'Verkaufsschwelle −' + TRIG]].forEach(([lvl, col, txt]) => {
+          const y = scales.y.getPixelForValue(lvl);
+          ctx.strokeStyle = col; ctx.globalAlpha = .45; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(a.left, y); ctx.lineTo(a.right, y); ctx.stroke();
+          ctx.globalAlpha = 1; ctx.setLineDash([]);
+          // Auf schmalen Bildschirmen genügen die Achsenwerte 70 und −70; die
+          // Beschriftung würde sonst über Kurve und Marken laufen.
+          if (a.width < 560) return;
+          ctx.fillStyle = col; ctx.font = '600 10px ' + css('--sans');
+          ctx.textAlign = 'left';
+          ctx.fillText(txt, a.left + 4, y + (lvl > 0 ? -4 : 12));
+        });
+        const y0 = scales.y.getPixelForValue(0);
+        ctx.strokeStyle = css('--divider'); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(a.left, y0); ctx.lineTo(a.right, y0); ctx.stroke();
+        ctx.restore();
+      }
+    }]
+  });
 }
 
 /* ---------- URL state ---------- */
