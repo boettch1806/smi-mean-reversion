@@ -2,11 +2,11 @@ const ROWS = window.DATA.rows;
 const SERIES = window.DATA.series;
 const META = window.DATA.meta || {};
 
-/* ISO-Datum als TT.MM.JJJJ */
+/* ISO-Datum als TT.MM.JJJJ. Bewusst ohne Date(), damit der Stichtag nicht in
+   der Zeitzone des Betrachters um einen Tag verrutscht. */
 const deDate = (iso) => {
-  if (!iso) return '–';
-  const d = new Date(iso);
-  return isNaN(d) ? iso : d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso || '–');
 };
 
 const state = { idx: 'all', cold: false, hot: false, q: '', sort: 'z', dir: -1, sel: null };
@@ -261,7 +261,7 @@ function exportCsv() {
   const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'mean-reversion-smi-smim-2026-08-13.csv';
+  a.download = `mean-reversion-smi-smim-${(META.asof || 'export')}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
