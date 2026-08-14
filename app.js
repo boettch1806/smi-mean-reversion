@@ -197,7 +197,7 @@ function charts(rs) {
     type: 'bar',
     data: {
       labels: zr.map(r => r.name.length > 17 ? r.name.slice(0, 16) + '…' : r.name),
-      datasets: [{ data: zr.map(r => r.z), backgroundColor: zr.map(r => (r.z > 0 ? css('--hot') : css('--cold')) + (Math.abs(r.z) > 1.5 ? 'ee' : '99')), borderRadius: 2, borderSkipped: false, barThickness: 'flex' }]
+      datasets: [{ data: zr.map(r => r.z), backgroundColor: zr.map(r => (r.z > 0 ? css('--hot') : css('--cold')) + (Math.abs(r.z) > 1.5 ? 'ee' : '99')), borderRadius: 2, borderSkipped: false, barThickness: 'flex', maxBarThickness: 22 }]
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
