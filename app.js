@@ -171,6 +171,7 @@ function extremes(rs) {
 
 /* ---------- charts ---------- */
 let sc, zb, dch;
+let detYrs = 0;  // 0 = ganzer Zeitraum, sonst Jahre
 function charts(rs) {
   const mk = (r) => ({ x: r.dist200, y: r.rsi, r: 4 + Math.min(Math.abs(r.z || 0), 4.2) * 3.2, row: r });
   const pick = (k) => rs.filter(r => r.rsi !== null && r.dist200 !== null && cls(r) === k).map(mk);
@@ -428,6 +429,7 @@ function detail() {
 function detailChart(r) {
   const wrap = document.querySelector('#detail .det-chart');
   const note = document.getElementById('det-chart-note');
+  const head = document.getElementById('det-chart-h');
   const s = SERIES[r.ticker];
   if (dch) { dch.destroy(); dch = null; }
   if (!s || !s.s) {
@@ -436,119 +438,206 @@ function detailChart(r) {
   }
   wrap.hidden = false;
 
+  // Rasterindex zu einem Tagesdatum, gerundet auf den nächstgelegenen Punkt.
   const idxOf = (iso) => {
     let lo = 0, hi = s.d.length - 1;
     while (lo < hi) { const m = (lo + hi) >> 1; if (s.d[m] < iso) lo = m + 1; else hi = m; }
     if (lo > 0 && Math.abs(Date.parse(s.d[lo]) - Date.parse(iso)) > Math.abs(Date.parse(iso) - Date.parse(s.d[lo - 1]))) lo -= 1;
     return lo;
   };
-  const ev = s.ev || [];
+
+  // Gewählter Zeitraum. 0 heisst alles, sonst die letzten n Jahre.
+  const last = s.d[s.d.length - 1];
+  let i0 = 0;
+  if (detYrs) {
+    const from = (Number(last.slice(0, 4)) - detYrs) + last.slice(4);
+    i0 = Math.min(idxOf(from), s.d.length - 12);
+  }
+  const D = s.d.slice(i0), P = s.p.slice(i0), S = s.s.slice(i0);
+  const M = (s.m || []).slice(i0), Z = (s.z || []).slice(i0);
+  const ev = (s.ev || []).filter(e => e[0] >= D[0]);
+  head.textContent = detYrs
+    ? `Signalverlauf der letzten ${detYrs === 1 ? 'zw\u00f6lf Monate' : detYrs + ' Jahre'}`
+    : 'Signalverlauf seit ' + deDate(D[0]);
+
   const mkPts = (side) => {
-    const a = new Array(s.d.length).fill(null);
+    const a = new Array(D.length).fill(null);
     ev.filter(e => e[1] === side).forEach(e => {
-      const i = idxOf(e[0]);
+      const i = idxOf(e[0]) - i0;
+      if (i < 0 || i >= a.length) return;
       if (a[i] === null || Math.abs(e[2]) > Math.abs(a[i])) a[i] = e[2];
     });
     return a;
   };
   const evAt = {};
-  ev.forEach(e => { const i = idxOf(e[0]); (evAt[i] = evAt[i] || []).push(e); });
+  ev.forEach(e => { const i = idxOf(e[0]) - i0; if (i >= 0) (evAt[i] = evAt[i] || []).push(e); });
 
   const nBuy = ev.filter(e => e[1] === 1).length;
   const nSell = ev.length - nBuy;
-  const gap = Math.round((Date.parse(META.asof) - Date.parse(s.d[s.d.length - 1])) / 86400000);
+  const gap = Math.round((Date.parse(META.asof) - Date.parse(last)) / 86400000);
   note.textContent =
-    `${nBuy} Kauf- und ${nSell} Verkaufseintritte${ev.length ? ' seit ' + deDate(ev[0][0]) : ''}. Die Punkte zeigen den Tag, `
-    + 'an dem der Score die Schwelle erstmals überschritt; ein durchgehendes Signal wird nur einmal gezählt. '
-    + 'Der Score dieser Kurve ist der mitlaufende aus dem Rückwärtstest und kennt keine künftigen Kurse, '
+    (ev.length
+      ? `${nBuy} Kauf- und ${nSell} Verkaufseintritte in diesem Zeitraum. Die Dreiecke zeigen den Tag, `
+        + 'an dem der Score die Schwelle erstmals \u00fcberschritt; ein durchgehendes Signal wird nur einmal gez\u00e4hlt. '
+      : 'In diesem Zeitraum hat der Score keine der beiden Schwellen neu \u00fcberschritten. ')
+    + 'Die Kurve zeigt den mitlaufenden Score aus dem R\u00fcckw\u00e4rtstest, der keine k\u00fcnftigen Kurse kennt, '
     + 'weshalb er am rechten Rand leicht von der Tabellenzahl abweichen kann'
-    + (gap > 1 ? `; die Kurve endet am ${deDate(s.d[s.d.length - 1])}, also ${gap} Tage vor dem Stichtag.` : '.');
+    + (gap > 1 ? `; sie endet am ${deDate(last)}, also ${gap} Tage vor dem Stichtag.` : '.');
 
-  const line = css('--text-muted'), faint = css('--text-faint');
+  const line = css('--text'), faint = css('--text-faint');
   const cold = css('--cold'), hot = css('--hot');
   const narrow = window.innerWidth < 720;
   // Jahreszahlen nur setzen, wenn genug Rasterpunkte dazwischen liegen, sonst
-  // kleben 2021 und 2022 auf schmalen Bildschirmen aneinander.
-  const yearTick = new Array(s.d.length).fill('');
-  let lastLabeled = -99;
-  s.d.forEach((iso, i) => {
-    if (i === 0 || iso.slice(0, 4) === s.d[i - 1].slice(0, 4)) return;
-    if (i - lastLabeled < (narrow ? 9 : 4)) return;
-    yearTick[i] = iso.slice(0, 4);
-    lastLabeled = i;
+  // kleben zwei Beschriftungen aneinander. Bei einem kurzen Zeitraum reicht das
+  // Jahr nicht, dann werden Monate gesetzt.
+  const MON = ['Jan', 'Feb', 'M\u00e4r', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  const xTick = new Array(D.length).fill('');
+  const minGap = narrow ? 9 : 4;
+  let lastAt = -99;
+  D.forEach((iso, i) => {
+    if (i === 0) return;
+    const prev = D[i - 1];
+    if (detYrs === 1) {
+      if (iso.slice(5, 7) === prev.slice(5, 7)) return;
+      const step = narrow ? 3 : 2;
+      if (Number(iso.slice(5, 7)) % step !== 1) return;
+      if (i - lastAt < 3) return;
+      xTick[i] = MON[Number(iso.slice(5, 7)) - 1] + (iso.slice(5, 7) === '01' ? ' ' + iso.slice(2, 4) : '');
+    } else {
+      if (iso.slice(0, 4) === prev.slice(0, 4)) return;
+      if (i - lastAt < minGap) return;
+      xTick[i] = iso.slice(0, 4);
+    }
+    lastAt = i;
   });
+
+  // Letzter gültiger Score für die Marke am rechten Rand.
+  let nowI = -1;
+  for (let i = S.length - 1; i >= 0; i--) { if (S[i] !== null) { nowI = i; break; } }
+
   dch = new Chart(document.getElementById('det-chart-c'), {
     type: 'line',
     data: {
-      labels: s.d,
+      labels: D,
       datasets: [
-        { label: 'Kurs', data: s.p, yAxisID: 'y1', borderColor: faint, borderWidth: 1,
-          pointRadius: 0, tension: .25, order: 3 },
-        { label: 'Score', data: s.s, yAxisID: 'y', borderColor: line, borderWidth: 1.6,
-          pointRadius: 0, tension: .2, spanGaps: false, order: 2 },
+        { label: 'Kurs', data: P, yAxisID: 'y1', borderColor: faint, borderWidth: 1.2,
+          pointRadius: 0, tension: .3, order: 4 },
+        { label: 'Score', data: S, yAxisID: 'y', borderColor: line, borderWidth: 1.7,
+          pointRadius: 0, tension: .2, spanGaps: false, order: 3 },
         { label: 'Kaufeintritt', data: mkPts(1), yAxisID: 'y', showLine: false,
           pointStyle: 'triangle', pointRadius: narrow ? 4.5 : 6, pointRotation: 0,
-          backgroundColor: cold, borderColor: cold, order: 1 },
+          backgroundColor: cold, borderColor: css('--surface'), borderWidth: 1, order: 1 },
         { label: 'Verkaufseintritt', data: mkPts(-1), yAxisID: 'y', showLine: false,
           pointStyle: 'triangle', pointRadius: narrow ? 4.5 : 6, pointRotation: 180,
-          backgroundColor: hot, borderColor: hot, order: 1 },
+          backgroundColor: hot, borderColor: css('--surface'), borderWidth: 1, order: 1 },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: { duration: 260 },
+      layout: { padding: { right: narrow ? 2 : 10 } },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
-          displayColors: false,
+          displayColors: false, padding: 9,
           callbacks: {
-            title: (c) => deDate(s.d[c[0].dataIndex]),
+            title: (c) => deDate(D[c[0].dataIndex]),
             label: (c) => {
               if (c.datasetIndex > 1) return null;
-              return c.datasetIndex === 0 ? 'Kurs: ' + fmt(c.parsed.y, 2) + ' CHF'
+              return c.datasetIndex === 0 ? 'Kurs: ' + fmt(c.parsed.y, c.parsed.y > 5000 ? 0 : 2) + ' CHF'
                 : 'Score: ' + sgn(c.parsed.y, 0);
             },
-            afterBody: (c) => (evAt[c[0].dataIndex] || []).map(e =>
-              `${e[1] === 1 ? 'Kaufeintritt' : 'Verkaufseintritt'} ${deDate(e[0])}, Score ${sgn(e[2], 0)}`
-              + (e[3] === null ? ', 20 Tage danach unbekannt' : `, 20 Tage danach ${sgn(e[3], 1)} %`))
+            afterBody: (c) => {
+              const i = c[0].dataIndex;
+              const out = [];
+              if (Z[i] !== null && Z[i] !== undefined) out.push('Z-Score: ' + sgn(Z[i]));
+              if (M[i]) out.push('\u0394 SMA 200: ' + sgn((P[i] / M[i] - 1) * 100, 1) + ' %');
+              (evAt[i] || []).forEach(e => out.push(
+                `${e[1] === 1 ? 'Kaufeintritt' : 'Verkaufseintritt'} ${deDate(e[0])}, Score ${sgn(e[2], 0)}`
+                + (e[3] === null ? ', 20 Tage danach unbekannt' : `, 20 Tage danach ${sgn(e[3], 1)} %`)));
+              return out;
+            }
           }
         }
       },
       scales: {
         x: { grid: { display: false }, border: { color: css('--border') },
              ticks: { color: faint, font: { size: 10 }, maxRotation: 0, autoSkip: false,
-                      // Jahreszahl nur am ersten Rasterpunkt des Jahres, sonst leer.
-                      callback: (v, i) => yearTick[i] || '' } },
+                      callback: (v, i) => xTick[i] || '' } },
         y: { min: -108, max: 108, position: 'left',
-             title: { display: true, text: 'Signal-Score', color: css('--text-muted'), font: { size: 11 } },
+             title: { display: !narrow, text: 'Signal-Score', color: css('--text-muted'), font: { size: 11 } },
              grid: { color: css('--divider') }, border: { color: css('--border') },
              afterBuildTicks: (ax) => { ax.ticks = [-100, -70, 0, 70, 100].map(value => ({ value })); },
              ticks: { color: faint, font: { size: 10 } } },
         y1: { position: 'right', grid: { display: false }, border: { color: css('--border') },
-              title: { display: true, text: 'Kurs in CHF', color: css('--text-faint'), font: { size: 11 } },
+              title: { display: !narrow, text: 'Kurs in CHF', color: css('--text-faint'), font: { size: 11 } },
               ticks: { color: faint, font: { size: 10 }, maxTicksLimit: 5 } }
       }
     },
     plugins: [{
-      id: 'trigband',
+      // Signalzonen hinterlegen, Schwellen beschriften und den aktuellen Stand
+      // am rechten Rand markieren.
+      id: 'sigzones',
       beforeDatasetsDraw(chart) {
         const { ctx, chartArea: a, scales } = chart;
         ctx.save();
-        [[TRIG, cold, 'Kaufschwelle ' + TRIG], [-TRIG, hot, 'Verkaufsschwelle −' + TRIG]].forEach(([lvl, col, txt]) => {
-          const y = scales.y.getPixelForValue(lvl);
-          ctx.strokeStyle = col; ctx.globalAlpha = .45; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(a.left, y); ctx.lineTo(a.right, y); ctx.stroke();
-          ctx.globalAlpha = 1; ctx.setLineDash([]);
-          // Auf schmalen Bildschirmen genügen die Achsenwerte 70 und −70; die
-          // Beschriftung würde sonst über Kurve und Marken laufen.
-          if (a.width < 560) return;
-          ctx.fillStyle = col; ctx.font = '600 10px ' + css('--sans');
-          ctx.textAlign = 'left';
-          ctx.fillText(txt, a.left + 4, y + (lvl > 0 ? -4 : 12));
-        });
+        const yTop = scales.y.getPixelForValue(108), yUp = scales.y.getPixelForValue(TRIG);
+        const yLo = scales.y.getPixelForValue(-TRIG), yBot = scales.y.getPixelForValue(-108);
+        ctx.globalAlpha = .09;
+        ctx.fillStyle = cold; ctx.fillRect(a.left, yTop, a.width, yUp - yTop);
+        ctx.fillStyle = hot; ctx.fillRect(a.left, yLo, a.width, yBot - yLo);
+        ctx.globalAlpha = 1;
         const y0 = scales.y.getPixelForValue(0);
         ctx.strokeStyle = css('--divider'); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(a.left, y0); ctx.lineTo(a.right, y0); ctx.stroke();
+        [[TRIG, cold, 'Kaufsignal ab ' + TRIG], [-TRIG, hot, 'Verkaufssignal ab \u2212' + TRIG]].forEach(([lvl, col, txt]) => {
+          const y = scales.y.getPixelForValue(lvl);
+          ctx.strokeStyle = col; ctx.globalAlpha = .5; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(a.left, y); ctx.lineTo(a.right, y); ctx.stroke();
+          ctx.globalAlpha = 1; ctx.setLineDash([]);
+          if (a.width < 480) return;
+          // Die Beschriftung erhält eine Fläche in Flächenfarbe, damit sie
+          // nicht mit der Kurve verschmilzt.
+          ctx.font = '600 10px ' + css('--sans');
+          const w = ctx.measureText(txt).width;
+          const ty = y + (lvl > 0 ? -6 : 13);
+          ctx.fillStyle = css('--surface'); ctx.globalAlpha = .85;
+          ctx.fillRect(a.left + 2, ty - 8, w + 8, 12);
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = col; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          ctx.fillText(txt, a.left + 6, ty + 1);
+        });
+        ctx.restore();
+      },
+      afterDatasetsDraw(chart) {
+        if (nowI < 0) return;
+        const { ctx, chartArea: a, scales } = chart;
+        const x = scales.x.getPixelForValue(nowI), y = scales.y.getPixelForValue(S[nowI]);
+        const col = Math.abs(S[nowI]) >= TRIG ? (S[nowI] > 0 ? cold : hot) : css('--text-muted');
+        ctx.save();
+        ctx.strokeStyle = col; ctx.globalAlpha = .35; ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(a.right, y); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+        // Am letzten Punkt steht oft schon ein Eintrittsdreieck, dann ist ein
+        // zweiter Punkt überflüssig.
+        if (!evAt[nowI]) {
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
+        }
+        if (a.width >= 480) {
+          const txt = sgn(S[nowI], 0);
+          ctx.font = '650 10px ' + css('--sans');
+          const w = ctx.measureText(txt).width;
+          // Rechts vom Punkt, falls dort Platz ist, sonst links davon. Senkrecht
+          // in die Fläche hinein, damit die Zahl nicht am Rand klebt.
+          const tx = x + 12 + w <= a.right ? x + 12 : x - w - 12;
+          const ty = Math.min(Math.max(y - 5, a.top + 11), a.bottom - 3);
+          ctx.fillStyle = css('--surface'); ctx.globalAlpha = .9;
+          ctx.fillRect(tx - 3, ty - 10, w + 6, 12);
+          ctx.globalAlpha = 1; ctx.fillStyle = col;
+          ctx.textAlign = 'left'; ctx.fillText(txt, tx, ty);
+        }
         ctx.restore();
       }
     }]
@@ -637,6 +726,17 @@ document.getElementById('btn-analyse').addEventListener('click', () => {
   if (state.an) document.getElementById('analysis').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 document.getElementById('det-close').addEventListener('click', () => { state.sel = null; render(); });
+
+// Zeitraum des Signalverlaufs. Nur der Chart wird neu gezeichnet, der Rest der
+// Ansicht bleibt stehen.
+document.querySelectorAll('.det-range button').forEach(b => {
+  b.addEventListener('click', () => {
+    detYrs = Number(b.dataset.yrs);
+    document.querySelectorAll('.det-range button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+    const r = ROWS.find(x => x.ticker === state.sel);
+    if (r) detailChart(r);
+  });
+});
 document.getElementById('theme').addEventListener('click', () => {
   const cur = document.documentElement.dataset.theme;
   document.documentElement.dataset.theme = cur === 'dark' ? 'light' : 'dark';

@@ -270,6 +270,9 @@ footer.foot { padding: 0 0 var(--space-8); font-size: var(--text-xs); color: var
 .det-bar .track { height: 6px; border-radius: 3px; background: var(--surface-offset); position: relative; overflow: hidden; }
 .det-bar .track i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
 .det-chart { margin-top: var(--space-5); display: grid; gap: var(--space-3); }
-.det-chart-hd { display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; }
+.det-chart-hd { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.det-chart-hd .det-range { margin-left: auto; }
+.det-range button { padding: 4px 10px; }
+.legend i.dash { width: 12px; height: 2px; border-radius: 1px; }
 .det-canvas { height: 280px; position: relative; }
 @media (max-width: 720px) { .det-canvas { height: 240px; } }

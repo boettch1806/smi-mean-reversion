@@ -87,12 +87,17 @@
         <div id="det-body"></div>
         <div class="det-chart">
           <div class="det-chart-hd">
-            <h3 class="sig-h">Signalverlauf der letzten fünf Jahre</h3>
+            <h3 class="sig-h" id="det-chart-h">Signalverlauf</h3>
             <div class="legend" id="det-legend">
-              <span><i style="background:var(--text-muted)"></i>Score</span>
-              <span><i style="background:var(--text-faint)"></i>Kurs</span>
+              <span><i class="dash" style="background:var(--text)"></i>Score</span>
+              <span><i class="dash" style="background:var(--text-faint)"></i>Kurs</span>
               <span><i style="background:var(--cold)"></i>Kaufeintritt</span>
               <span><i style="background:var(--hot)"></i>Verkaufseintritt</span>
+            </div>
+            <div class="seg det-range" role="group" aria-label="Zeitraum des Signalverlaufs">
+              <button type="button" data-yrs="1">1 J</button>
+              <button type="button" data-yrs="3">3 J</button>
+              <button type="button" data-yrs="0" aria-pressed="true">Alles</button>
             </div>
           </div>
           <div class="det-canvas"><canvas id="det-chart-c"></canvas></div>
