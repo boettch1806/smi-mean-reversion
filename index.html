@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mean-Reversion-Dashboard SMI &amp; SMIM</title>
+<meta name="description" content="Mean-Reversion-Kennzahlen für alle Titel des Swiss Market Index und SMIM: RSI 14, Abstand zur 200-Tage-Linie, Z-Score, historische Volatilität und durchschnittliche Rückkehrdauer.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Mean-Reversion-Dashboard SMI &amp; SMIM">
+<meta property="og:description" content="RSI 14, Abstand zur 200-Tage-Linie, Z-Score, Volatilität und Rückkehrdauer für 50 Schweizer Blue Chips und Mid Caps.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;550;600;650&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23d8232a'/%3E%3Cpath d='M7 21c4-11 14 3 18-9' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-label="Logo Mean Reversion" role="img">
+        <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="currentColor" stroke-width="1"/>
+        <path d="M6 16h20" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity=".5"/>
+        <path d="M6 22C10 22 11 8 16 8s6 14 10 14" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Mean-Reversion-Dashboard</h1>
+        <p>SMI &amp; SMIM &middot; Stand <span id="asof">–</span> &middot; <span id="count">–</span> Titel</p>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="seg" role="group" aria-label="Index filtern">
+      <button data-idx="all" aria-pressed="true">Alle</button>
+      <button data-idx="SMI" aria-pressed="false">SMI</button>
+      <button data-idx="SMIM" aria-pressed="false">SMIM</button>
+    </div>
+    <button class="chip cold" id="f-cold" aria-pressed="false">RSI &lt; 30</button>
+    <button class="chip hot" id="f-hot" aria-pressed="false">RSI &gt; 70</button>
+    <input class="search" id="q" type="search" placeholder="Titel suchen" aria-label="Titel suchen">
+    <button class="icon-btn" id="csv" aria-label="Auswahl als CSV herunterladen" title="Auswahl als CSV herunterladen">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 20h16"/></svg>
+    </button>
+    <button class="icon-btn" id="theme" aria-label="Farbschema wechseln" title="Farbschema wechseln">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+    </button>
+  </header>
+
+  <main class="main">
+   <div class="wrap">
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="grid-2">
+      <div class="card">
+        <header>
+          <h2>RSI gegen Abstand zur 200-Tage-Linie</h2>
+          <p>Punktgrösse = |Z-Score|</p>
+          <div class="spacer"></div>
+          <div class="legend">
+            <span><i style="background:var(--cold)"></i>überverkauft</span>
+            <span><i style="background:var(--hot)"></i>überkauft</span>
+            <span><i style="background:var(--text-faint)"></i>neutral</span>
+          </div>
+        </header>
+        <div class="body"><div class="chart-box"><canvas id="scatter"></canvas></div></div>
+      </div>
+
+      <div class="card">
+        <header>
+          <h2>Z-Score-Rangliste</h2>
+          <p>Abweichung zur 200-Tage-Linie, normiert über 5 Jahre</p>
+        </header>
+        <div class="body"><div class="chart-box"><canvas id="zbars"></canvas></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header>
+        <h2>Extremste Z-Scores</h2>
+        <p>Historische Volatilität und durchschnittliche Rückkehrdauer, 5 Jahre</p>
+      </header>
+      <div class="body"><div class="ext-grid" id="ext"></div></div>
+    </section>
+
+    <section class="card">
+      <header>
+        <h2>Alle Titel</h2>
+        <p id="tinfo">–</p>
+        <div class="spacer"></div>
+        <p>Spalte anklicken zum Sortieren</p>
+      </header>
+      <div class="table-scroll">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th class="l"><button data-k="name">Titel</button></th>
+              <th class="l"><button data-k="index">Index</button></th>
+              <th class="n"><button data-k="close">Kurs</button></th>
+              <th class="n"><button data-k="rsi">RSI 14</button></th>
+              <th class="n"><button data-k="sma200">SMA 200</button></th>
+              <th class="n"><button data-k="dist200">Δ SMA 200</button></th>
+              <th class="n"><button data-k="z">Z-Score</button></th>
+              <th class="n"><button data-k="vol1y">Vola 1J</button></th>
+              <th class="n"><button data-k="vol5y">Vola 5J</button></th>
+              <th class="n"><button data-k="rev_days">Ø Rückkehr</button></th>
+              <th class="n"><button data-k="halflife">Halbwertszeit</button></th>
+              <th class="n"><button data-k="episodes">Episoden</button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="body note cols-2">
+        <h3>Methodik</h3>
+        <ul>
+          <li><b>Datenbasis:</b> Tagesschlusskurse in CHF, 04.01.2021 bis 13.08.2026, über den Finanzdaten-Konnektor bezogen.</li>
+          <li><b>RSI 14:</b> Relative Strength Index nach Wilder mit exponentieller Glättung (Alpha = 1/14) auf Schlusskursen.</li>
+          <li><b>Δ SMA 200:</b> prozentualer Abstand des letzten Schlusskurses zum einfachen 200-Tage-Durchschnitt.</li>
+          <li><b>Z-Score:</b> logarithmische Abweichung ln(Kurs) − ln(SMA 200), standardisiert an Mittelwert und Standardabweichung derselben Grösse über die letzten fünf Jahre. Positiv = teurer als normal, negativ = billiger als normal.</li>
+          <li><b>Volatilität:</b> Standardabweichung der täglichen Log-Renditen, annualisiert mit √252, für ein bzw. fünf Jahre.</li>
+          <li><b>Ø Rückkehrdauer:</b> mittlere Zahl an Handelstagen von dem Moment, in dem |Z| erstmals 1,0 überschreitet, bis die Abweichung ihren 5-Jahres-Mittelwert wieder durchkreuzt. «Episoden» ist die Anzahl solcher Ereignisse in fünf Jahren.</li>
+          <li><b>Halbwertszeit:</b> aus einer AR(1)-Schätzung der Abweichung, −ln 2 / ln φ, in Handelstagen.</li>
+          <li><b>Grenzen:</b> Kein Kurs-Splitting oder Dividenden-Adjustment; Titel mit kurzer Historie (Amrize, Sunrise) erhalten keinen 5-Jahres-Z-Score. Kein Anlageratschlag.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="foot">Quellcode auf <a href="https://github.com/boettch1806/smi-mean-reversion" style="color:inherit">GitHub</a> &middot; Berechnet am 14.08.2026 &middot; Indexzusammensetzung per 13.08.2026, vor Inkrafttreten der Index-Anpassung vom 21.09.2026.</footer>
+   </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
