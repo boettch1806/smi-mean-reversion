@@ -1,51 +1,51 @@
 ticker,name,index,sector,last_date,close,rsi,sma200,dist200,z,vol1y,vol5y,rev_days,halflife,episodes,hitrate,obs,score,sig,stale
-NESN.SW,Nestlé,SMI,Nahrungsmittel,2026-09-03,77.84,37.5,79.2,-1.72,0.16,22.5,18.2,60.0,36.0,13.0,92.0,1533,13.0,kein Signal,False
-NOVN.SW,Novartis,SMI,Pharma,2026-09-03,131.32,62.7,118.78,10.56,1.15,20.3,18.7,50.0,34.0,15.0,93.0,1533,-48.0,kein Signal,False
+NESN.SW,Nestlé,SMI,Nahrungsmittel,2026-09-04,78.31,40.9,79.19,-1.11,0.26,22.5,18.2,60.0,36.0,13.0,92.0,1532,6.0,kein Signal,False
+NOVN.SW,Novartis,SMI,Pharma,2026-09-04,129.58,57.4,118.9,8.98,0.9,20.3,18.7,50.0,34.0,15.0,93.0,1532,-34.0,kein Signal,False
 ROG.SW,Roche GS,SMI,Pharma,2026-04-13,317.2,44.2,298.55,6.25,0.73,24.4,20.2,106.0,73.0,8.0,88.0,1328,-11.0,kein Signal,True
-ABBN.SW,ABB,SMI,Industrie,2026-09-03,77.22,37.1,72.32,6.78,-0.06,27.2,25.5,94.0,61.0,6.0,100.0,1533,20.0,kein Signal,False
-UBSG.SW,UBS Group,SMI,Banken,2026-09-03,44.57,64.2,36.41,22.41,1.4,23.2,29.1,58.0,36.0,12.0,92.0,1533,-56.0,Beobachtung Verkauf,False
-CFR.SW,Richemont,SMI,Luxus,2026-09-03,183.65,41.2,167.04,9.94,0.46,30.2,34.1,68.0,50.0,12.0,92.0,1533,0.0,kein Signal,False
-ZURN.SW,Zurich Insurance,SMI,Versicherung,2026-09-03,604.4,57.9,573.51,5.39,0.4,17.6,17.5,52.0,29.0,16.0,100.0,1533,-21.0,kein Signal,False
-HOLN.SW,Holcim,SMI,Baustoffe,2026-09-03,72.14,50.5,73.23,-1.49,-0.26,29.0,38.8,93.0,39.0,8.0,100.0,1533,6.0,kein Signal,False
-SREN.SW,Swiss Re,SMI,Versicherung,2026-09-03,143.6,68.1,130.26,10.24,0.71,20.9,22.7,76.0,60.0,9.0,100.0,1533,-44.0,kein Signal,False
-LONN.SW,Lonza,SMI,Life Science,2026-09-03,582.0,54.8,529.64,9.89,0.82,22.4,29.9,147.0,66.0,5.0,100.0,1533,-28.0,kein Signal,False
-SCMN.SW,Swisscom,SMI,Telekom,2026-09-03,633.0,51.3,639.87,-1.07,-0.42,16.8,15.6,72.0,59.0,9.0,100.0,1533,9.0,kein Signal,False
-GIVN.SW,Givaudan,SMI,Chemie,2026-09-03,3282.0,49.9,3092.63,6.12,0.72,24.8,23.5,172.0,82.0,6.0,83.0,1533,-19.0,kein Signal,False
-ALC.SW,Alcon,SMI,Medtech,2026-09-03,58.0,49.4,59.14,-1.93,-0.07,26.5,25.2,85.0,41.0,9.0,100.0,1533,3.0,kein Signal,False
-SIKA.SW,Sika,SMI,Baustoffe,2026-09-03,189.3,56.6,156.84,20.7,1.84,30.9,29.2,94.0,70.0,9.0,89.0,1533,-57.0,Beobachtung Verkauf,False
-AMRZ.SW,Amrize,SMI,Baustoffe,2026-09-03,34.81,32.7,42.36,-17.82,,35.3,37.7,,,,,303,,kein Score,False
-SLHN.SW,Swiss Life,SMI,Versicherung,2026-09-03,932.0,54.4,885.92,5.2,0.0,15.9,19.8,47.0,46.0,11.0,100.0,1533,-6.0,kein Signal,False
-KNIN.SW,Kühne+Nagel,SMI,Logistik,2026-09-03,214.2,55.0,184.39,16.17,1.65,29.3,28.4,91.0,49.0,9.0,89.0,1533,-50.0,kein Signal,False
-GEBN.SW,Geberit,SMI,Industrie,2026-09-03,564.4,54.1,566.73,-0.41,0.13,21.2,23.9,118.0,64.0,8.0,100.0,1533,-9.0,kein Signal,False
-PGHN.SW,Partners Group,SMI,Private Markets,2026-09-03,685.4,41.1,845.41,-18.93,-1.05,34.4,32.4,109.0,68.0,8.0,88.0,1533,40.0,kein Signal,False
-LOGN.SW,Logitech,SMI,Technologie,2026-09-03,81.72,52.1,80.2,1.9,0.29,33.1,34.8,94.0,70.0,8.0,100.0,1533,-10.0,kein Signal,False
-STMN.SW,Straumann,SMIM,Medtech,2026-09-03,95.02,43.6,93.95,1.14,0.32,31.2,35.8,76.0,54.0,9.0,89.0,1533,1.0,kein Signal,False
-SDZ.SW,Sandoz,SMIM,Pharma,2026-09-03,70.36,50.4,64.36,9.32,-0.63,29.7,32.1,51.0,29.0,6.0,83.0,730,16.0,kein Signal,False
-VACN.SW,VAT Group,SMIM,Halbleiter,2026-09-03,596.0,41.4,544.02,9.55,0.22,44.5,40.2,145.0,93.0,5.0,80.0,1533,6.0,kein Signal,False
-SGSN.SW,SGS,SMIM,Dienstleistungen,2026-09-03,91.88,36.4,91.11,0.85,0.29,18.0,20.6,108.0,53.0,8.0,88.0,1533,12.0,kein Signal,False
-LISN.SW,Lindt & Sprüngli N,SMIM,Nahrungsmittel,2026-09-03,88400.0,29.7,106880.0,-17.29,-2.19,22.2,20.3,73.0,66.0,9.0,89.0,1533,85.0,Kaufsignal deutlich,False
-LISP.SW,Lindt & Sprüngli PS,SMIM,Nahrungsmittel,2026-09-03,8525.0,28.2,10462.4,-18.52,-2.15,23.9,21.8,53.0,69.0,10.0,90.0,1533,86.0,Kaufsignal deutlich,False
-BAER.SW,Julius Bär,SMIM,Banken,2026-09-03,75.08,55.1,65.52,14.59,1.13,25.2,29.6,100.0,53.0,7.0,86.0,1533,-37.0,kein Signal,False
-SCHP.SW,Schindler PS,SMIM,Industrie,2026-09-03,260.6,48.9,276.39,-5.71,-0.47,19.6,22.3,282.0,89.0,4.0,75.0,1533,14.0,kein Signal,False
-SCHN.SW,Schindler N,SMIM,Industrie,2026-09-03,255.5,52.5,264.85,-3.53,-0.27,20.2,22.3,267.0,86.0,4.0,75.0,1533,4.0,kein Signal,False
-RO.SW,Roche N,SMIM,Pharma,2026-09-03,366.8,51.7,342.4,7.13,0.74,25.2,22.2,85.0,65.0,10.0,90.0,1533,-22.0,kein Signal,False
-ADEN.SW,Adecco,SMIM,Personal,2026-09-03,23.7,57.1,20.34,16.52,1.8,43.2,35.1,85.0,59.0,11.0,91.0,1533,-57.0,Beobachtung Verkauf,False
-SPSN.SW,Swiss Prime Site,SMIM,Immobilien,2026-09-03,124.7,37.1,130.08,-4.14,-1.02,14.2,16.0,152.0,63.0,6.0,83.0,1533,45.0,kein Signal,False
-SIGN.SW,SIG Group,SMIM,Verpackung,2026-09-03,13.51,42.2,12.16,11.1,1.03,50.5,33.3,63.0,73.0,9.0,89.0,1533,-16.0,kein Signal,False
-UHR.SW,Swatch Group,SMIM,Luxus,2026-09-03,182.95,41.4,185.31,-1.27,0.2,34.4,31.4,105.0,55.0,7.0,100.0,1533,7.0,kein Signal,False
-HBAN.SW,Helvetia Baloise,SMIM,Versicherung,2026-09-03,216.6,56.9,206.11,5.09,-0.05,17.6,20.0,63.0,59.0,13.0,100.0,1533,-8.0,kein Signal,False
-PSPN.SW,PSP Swiss Property,SMIM,Immobilien,2026-09-03,145.7,54.1,149.12,-2.29,-0.69,13.4,16.4,90.0,45.0,9.0,89.0,1533,12.0,kein Signal,False
-TEMN.SW,Temenos,SMIM,Software,2026-09-03,72.95,52.0,71.64,1.83,0.51,42.6,43.8,81.0,42.0,9.0,100.0,1533,-16.0,kein Signal,False
-BARN.SW,Barry Callebaut,SMIM,Nahrungsmittel,2026-09-03,1084.0,39.6,1234.47,-12.19,-0.53,35.6,30.4,137.0,77.0,5.0,100.0,1533,28.0,kein Signal,False
-GF.SW,Georg Fischer,SMIM,Industrie,2026-09-03,55.9,64.3,48.25,15.85,1.38,30.9,29.6,96.0,64.0,10.0,90.0,1533,-56.0,Beobachtung Verkauf,False
-EMSN.SW,EMS-Chemie,SMIM,Chemie,2026-09-03,790.0,54.1,659.94,19.71,1.96,20.1,22.1,66.0,84.0,11.0,91.0,1533,-57.0,Beobachtung Verkauf,False
-BEAN.SW,Belimo,SMIM,Industrie,2026-09-03,840.0,49.6,802.65,4.65,-0.01,38.8,34.1,89.0,63.0,8.0,100.0,1533,1.0,kein Signal,False
-GALE.SW,Galenica,SMIM,Gesundheit,2026-09-03,83.1,48.2,89.73,-7.39,-1.85,16.6,17.5,37.0,32.0,16.0,94.0,1533,51.0,kein Signal,False
-AVOL.SW,Avolta,SMIM,Detailhandel,2026-09-03,44.6,29.1,48.01,-7.1,-0.47,29.1,32.8,84.0,49.0,10.0,100.0,1533,41.0,kein Signal,False
-FHZN.SW,Flughafen Zürich,SMIM,Infrastruktur,2026-09-03,206.8,25.7,240.48,-14.01,-3.39,21.7,21.1,38.0,26.0,21.0,95.0,1533,99.0,Kaufsignal deutlich,False
-CLN.SW,Clariant,SMIM,Chemie,2026-09-03,10.64,62.8,7.93,34.17,3.37,36.0,30.8,80.0,59.0,10.0,90.0,1533,-83.0,Verkaufssignal,False
-GALD.SW,Galderma,SMIM,Pharma,2026-09-03,162.85,32.4,161.28,0.97,-1.44,28.0,32.6,77.0,33.0,5.0,80.0,612,62.0,Beobachtung Kauf,False
-SOON.SW,Sonova,SMIM,Medtech,2026-09-03,236.4,55.3,202.96,16.48,1.41,27.8,29.1,93.0,66.0,10.0,90.0,1533,-44.0,kein Signal,False
-SQN.SW,Swissquote,SMIM,Banken,2026-09-03,42.28,56.6,42.13,0.36,-0.37,33.7,35.9,157.0,93.0,6.0,83.0,1533,0.0,kein Signal,False
-ACLN.SW,Accelleron,SMIM,Industrie,2026-09-03,75.8,51.4,74.04,2.38,-1.17,33.8,33.1,92.0,54.0,6.0,83.0,984,28.0,kein Signal,False
-SUNN.SW,Sunrise,SMIM,Telekom,2026-09-03,41.5,44.4,43.37,-4.31,,20.7,24.0,,,,,448,,kein Score,False
+ABBN.SW,ABB,SMI,Industrie,2026-09-04,77.76,40.0,72.43,7.36,-0.01,27.2,25.5,94.0,61.0,6.0,100.0,1532,14.0,kein Signal,False
+UBSG.SW,UBS Group,SMI,Banken,2026-09-04,44.81,66.2,36.48,22.83,1.44,23.0,29.1,58.0,36.0,12.0,92.0,1532,-60.0,Beobachtung Verkauf,False
+CFR.SW,Richemont,SMI,Luxus,2026-09-04,185.45,44.1,167.16,10.94,0.53,30.2,34.1,68.0,50.0,12.0,92.0,1532,-6.0,kein Signal,False
+ZURN.SW,Zurich Insurance,SMI,Versicherung,2026-09-04,601.6,54.8,573.63,4.88,0.31,17.6,17.5,52.0,29.0,16.0,100.0,1532,-15.0,kein Signal,False
+HOLN.SW,Holcim,SMI,Baustoffe,2026-09-04,73.84,56.7,73.24,0.82,-0.08,29.0,38.8,93.0,39.0,8.0,100.0,1532,-7.0,kein Signal,False
+SREN.SW,Swiss Re,SMI,Versicherung,2026-09-04,142.85,64.4,130.2,9.72,0.66,20.9,22.7,76.0,59.0,9.0,100.0,1532,-37.0,kein Signal,False
+LONN.SW,Lonza,SMI,Life Science,2026-09-04,567.2,45.1,529.71,7.08,0.63,22.5,30.0,149.0,66.0,5.0,100.0,1532,-10.0,kein Signal,False
+SCMN.SW,Swisscom,SMI,Telekom,2026-09-04,633.5,51.7,640.08,-1.03,-0.41,16.8,15.6,72.0,59.0,9.0,100.0,1532,8.0,kein Signal,False
+GIVN.SW,Givaudan,SMI,Chemie,2026-09-04,3250.0,47.2,3091.59,5.12,0.64,24.8,23.5,172.0,81.0,6.0,83.0,1532,-13.0,kein Signal,False
+ALC.SW,Alcon,SMI,Medtech,2026-09-04,57.3,46.0,59.11,-3.06,-0.19,26.5,25.2,85.0,41.0,9.0,100.0,1532,11.0,kein Signal,False
+SIKA.SW,Sika,SMI,Baustoffe,2026-09-04,191.95,60.4,157.02,22.25,1.93,30.9,29.2,94.0,71.0,9.0,89.0,1532,-65.0,Beobachtung Verkauf,False
+AMRZ.SW,Amrize,SMI,Baustoffe,2026-09-04,35.47,38.4,42.34,-16.23,,35.3,37.7,,,,,304,,kein Score,False
+SLHN.SW,Swiss Life,SMI,Versicherung,2026-09-04,938.4,58.2,886.2,5.89,0.09,15.9,19.8,47.0,46.0,11.0,100.0,1532,-14.0,kein Signal,False
+KNIN.SW,Kühne+Nagel,SMI,Logistik,2026-09-04,211.3,49.7,184.67,14.42,1.51,29.3,28.4,91.0,48.0,9.0,89.0,1532,-39.0,kein Signal,False
+GEBN.SW,Geberit,SMI,Industrie,2026-09-04,563.4,53.4,566.36,-0.52,0.12,21.1,23.9,118.0,64.0,8.0,100.0,1532,-8.0,kein Signal,False
+PGHN.SW,Partners Group,SMI,Private Markets,2026-09-04,679.0,39.4,844.01,-19.55,-1.1,34.2,32.4,109.0,68.0,8.0,88.0,1532,43.0,kein Signal,False
+LOGN.SW,Logitech,SMI,Technologie,2026-09-04,82.32,53.9,80.14,2.72,0.34,33.1,34.7,88.0,70.0,9.0,100.0,1532,-14.0,kein Signal,False
+STMN.SW,Straumann,SMIM,Medtech,2026-09-04,93.94,41.2,93.91,0.03,0.25,31.2,35.8,76.0,54.0,9.0,89.0,1532,6.0,kein Signal,False
+SDZ.SW,Sandoz,SMIM,Pharma,2026-09-04,68.36,43.9,64.42,6.12,-0.98,29.8,32.2,51.0,29.0,6.0,83.0,731,34.0,kein Signal,False
+VACN.SW,VAT Group,SMIM,Halbleiter,2026-09-04,612.6,48.3,545.45,12.31,0.33,44.3,40.2,145.0,93.0,5.0,80.0,1532,-6.0,kein Signal,False
+SGSN.SW,SGS,SMIM,Dienstleistungen,2026-09-04,91.02,32.3,91.1,-0.09,0.17,18.0,20.6,108.0,53.0,8.0,88.0,1532,20.0,kein Signal,False
+LISN.SW,Lindt & Sprüngli N,SMIM,Nahrungsmittel,2026-09-04,87900.0,28.5,106683.5,-17.61,-2.23,22.2,20.3,73.0,67.0,9.0,89.0,1532,88.0,Kaufsignal deutlich,False
+LISP.SW,Lindt & Sprüngli PS,SMIM,Nahrungsmittel,2026-09-04,8475.0,27.1,10441.17,-18.83,-2.19,23.9,21.8,53.0,69.0,10.0,90.0,1532,89.0,Kaufsignal deutlich,False
+BAER.SW,Julius Bär,SMIM,Banken,2026-09-04,74.84,53.5,65.6,14.09,1.09,25.1,29.5,100.0,53.0,7.0,86.0,1532,-33.0,kein Signal,False
+SCHP.SW,Schindler PS,SMIM,Industrie,2026-09-04,260.6,48.9,276.26,-5.67,-0.46,19.6,22.3,282.0,89.0,4.0,75.0,1532,14.0,kein Signal,False
+SCHN.SW,Schindler N,SMIM,Industrie,2026-09-04,255.5,52.5,264.77,-3.5,-0.27,20.2,22.3,267.0,86.0,4.0,75.0,1532,4.0,kein Signal,False
+RO.SW,Roche N,SMIM,Pharma,2026-09-04,364.2,49.4,342.71,6.27,0.66,25.2,22.2,88.0,65.0,10.0,90.0,1532,-16.0,kein Signal,False
+ADEN.SW,Adecco,SMIM,Personal,2026-09-04,24.16,61.2,20.33,18.84,1.94,42.7,35.1,85.0,60.0,11.0,91.0,1532,-66.0,Beobachtung Verkauf,False
+SPSN.SW,Swiss Prime Site,SMIM,Immobilien,2026-09-04,125.6,41.9,130.12,-3.47,-0.91,14.1,16.0,152.0,62.0,6.0,83.0,1532,35.0,kein Signal,False
+SIGN.SW,SIG Group,SMIM,Verpackung,2026-09-04,13.62,44.2,12.18,11.82,1.06,50.5,33.3,63.0,73.0,9.0,89.0,1532,-19.0,kein Signal,False
+UHR.SW,Swatch Group,SMIM,Luxus,2026-09-04,185.2,45.7,185.35,-0.08,0.3,34.4,31.4,105.0,55.0,7.0,100.0,1532,-2.0,kein Signal,False
+HBAN.SW,Helvetia Baloise,SMIM,Versicherung,2026-09-04,214.0,50.2,206.13,3.82,-0.2,17.7,20.0,63.0,59.0,13.0,100.0,1532,5.0,kein Signal,False
+PSPN.SW,PSP Swiss Property,SMIM,Immobilien,2026-09-04,145.7,54.1,149.14,-2.31,-0.69,13.3,16.4,90.0,45.0,9.0,89.0,1532,12.0,kein Signal,False
+TEMN.SW,Temenos,SMIM,Software,2026-09-04,72.75,51.1,71.63,1.56,0.5,42.6,43.8,81.0,42.0,9.0,100.0,1532,-15.0,kein Signal,False
+BARN.SW,Barry Callebaut,SMIM,Nahrungsmittel,2026-09-04,1087.0,40.5,1233.66,-11.89,-0.51,35.5,30.3,137.0,77.0,5.0,100.0,1532,27.0,kein Signal,False
+GF.SW,Georg Fischer,SMIM,Industrie,2026-09-04,55.7,62.9,48.26,15.42,1.35,30.7,29.6,96.0,64.0,10.0,90.0,1532,-53.0,kein Signal,False
+EMSN.SW,EMS-Chemie,SMIM,Chemie,2026-09-04,789.0,53.4,661.11,19.34,1.92,20.0,22.1,66.0,84.0,11.0,91.0,1532,-55.0,Beobachtung Verkauf,False
+BEAN.SW,Belimo,SMIM,Industrie,2026-09-04,839.5,49.4,802.89,4.56,-0.02,38.5,34.1,89.0,63.0,8.0,100.0,1532,1.0,kein Signal,False
+GALE.SW,Galenica,SMIM,Gesundheit,2026-09-04,82.9,47.1,89.7,-7.58,-1.88,16.6,17.5,37.0,32.0,16.0,94.0,1532,53.0,kein Signal,False
+AVOL.SW,Avolta,SMIM,Detailhandel,2026-09-04,44.26,27.7,48.01,-7.81,-0.53,28.9,32.7,84.0,50.0,10.0,100.0,1532,45.0,kein Signal,False
+FHZN.SW,Flughafen Zürich,SMIM,Infrastruktur,2026-09-04,207.2,26.5,240.31,-13.78,-3.32,21.7,21.1,38.0,26.0,21.0,95.0,1532,98.0,Kaufsignal deutlich,False
+CLN.SW,Clariant,SMIM,Chemie,2026-09-04,10.59,61.4,7.94,33.38,3.29,35.9,30.7,80.0,58.0,10.0,90.0,1532,-81.0,Verkaufssignal,False
+GALD.SW,Galderma,SMIM,Pharma,2026-09-04,158.65,27.5,161.32,-1.66,-1.69,28.0,32.7,77.0,34.0,5.0,80.0,613,75.0,Kaufsignal,False
+SOON.SW,Sonova,SMIM,Medtech,2026-09-04,234.8,52.6,203.04,15.64,1.35,27.7,29.1,93.0,65.0,10.0,90.0,1532,-39.0,kein Signal,False
+SQN.SW,Swissquote,SMIM,Banken,2026-09-04,41.94,54.7,42.1,-0.38,-0.4,33.6,35.9,157.0,93.0,6.0,83.0,1532,4.0,kein Signal,False
+ACLN.SW,Accelleron,SMIM,Industrie,2026-09-04,76.1,52.1,74.1,2.7,-1.14,33.8,33.1,92.0,54.0,6.0,83.0,985,27.0,kein Signal,False
+SUNN.SW,Sunrise,SMIM,Telekom,2026-09-04,41.3,42.9,43.36,-4.75,-0.62,20.6,23.9,48.0,24.0,4.0,100.0,449,26.0,kein Signal,False
